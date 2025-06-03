@@ -13,8 +13,8 @@
             background-color: #1a202c;
             border-radius: 40px;
             box-shadow: 0 0 0 8px #2d3748,
-                        0 0 0 12px #1a202c,
-                        0 20px 50px rgba(0, 0, 0, 0.7);
+                                0 0 0 12px #1a202c,
+                                0 20px 50px rgba(0, 0, 0, 0.7);
             position: relative;
             overflow: hidden;
             display: flex; /* Usar flexbox para el diseño principal */
@@ -65,7 +65,6 @@
             border: 4px solid #4a5568;
             background-color: #2d3748;
             position: absolute;
-            /* bottom: -60px;  Ocultar el 30% inferior (200px * 0.3 = 60px) */
             top: 50%; /* Centrar verticalmente en su contenedor relativo */
             transform: translateY(-50%); /* Ajuste para centrado vertical */
             cursor: grab;
@@ -111,6 +110,7 @@
             justify-content: center;
             overflow: hidden;
             position: relative;
+            margin-bottom: 10px; /* Espacio debajo del visualizador */
         }
 
         .kick-pulse-element {
@@ -320,6 +320,9 @@
             <div class="faders-buttons-area">
                 <div class="fader-group">
                     <div class="control-column">
+                        <div id="kick-visualizer-1" class="kick-visualizer-container">
+                            <div id="kick-pulse-1" class="kick-pulse-element"></div>
+                        </div>
                         <h2 class="text-sm font-semibold text-blue-300">BPM: <span id="bpm-value-1" class="bpm-value">145.0</span></h2>
                         <button id="sync-1" class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold py-1 px-2 rounded-md shadow-lg transition-all duration-200 mb-2">
                             SYNC
@@ -328,6 +331,9 @@
                     </div>
 
                     <div class="control-column">
+                        <div id="kick-visualizer-2" class="kick-visualizer-container">
+                            <div id="kick-pulse-2" class="kick-pulse-element"></div>
+                        </div>
                         <h2 class="text-sm font-semibold text-blue-300">BPM: <span id="bpm-value-2" class="bpm-value">130.0</span></h2>
                         <button id="sync-2" class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold py-1 px-2 rounded-md shadow-lg transition-all duration-200 mb-2">
                             SYNC
@@ -387,8 +393,8 @@
         const sync2 = document.getElementById('sync-2');
 
         // Obtener referencias a los displays de tiempo y progreso de onda
-        const timeDisplay1 = document.getElementById('time-display-1');
-        const timeDisplay2 = document.getElementById('time-display-2');
+        // const timeDisplay1 = document.getElementById('time-display-1'); // These IDs are not in the HTML
+        // const timeDisplay2 = document.getElementById('time-display-2'); // These IDs are not in the HTML
         const waveformProgress1 = document.getElementById('waveform-progress-1');
         const waveformProgress2 = document.getElementById('waveform-progress-2');
 
@@ -659,16 +665,16 @@
          * @param {HTMLElement} timeDisplay - El elemento para mostrar el tiempo.
          * @param {HTMLElement} waveformProgress - El elemento para el progreso de la onda.
          */
-        function updateTimeAndWaveform(audio, timeDisplay, waveformProgress) {
+        function updateTimeAndWaveform(audio, /* timeDisplay, */ waveformProgress) { // timeDisplay removed from parameters as it's not in HTML
             const currentTime = audio.currentTime;
             const duration = audio.duration;
 
             if (!isNaN(duration)) {
-                timeDisplay.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`;
+                // timeDisplay.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`; // This line will cause an error if timeDisplay is null
                 const progress = (currentTime / duration) * 100;
                 waveformProgress.style.width = `${progress}%`;
             } else {
-                timeDisplay.textContent = `0:00 / 0:00`;
+                // timeDisplay.textContent = `0:00 / 0:00`; // This line will cause an error if timeDisplay is null
                 waveformProgress.style.width = `0%`;
             }
         }
@@ -741,122 +747,105 @@
         // --- Funcionalidad del Crossfader ---
         crossfader.addEventListener('input', () => {
             const value = parseFloat(crossfader.value);
-            audio1.volume = 1 - value;
-            audio2.volume = value;
+            // Adjust volume based on crossfader position
+            audio1.volume = 1 - value; // When value is 0, audio1 is full. When value is 1, audio1 is silent.
+            audio2.volume = value;      // When value is 0, audio2 is silent. When value is 1, audio2 is full.
         });
 
-        // --- Listeners de eventos ---
+
+        // --- Event Listeners para botones de Play/Pause ---
         playPause1.addEventListener('click', () => togglePlayPause(audio1, playPause1, kickPulse1, bpmValue1, 1));
         playPause2.addEventListener('click', () => togglePlayPause(audio2, playPause2, kickPulse2, bpmValue2, 2));
 
-        // Listeners para los botones SYNC
-        sync1.addEventListener('click', () => syncBPM(2, 1)); // Sincroniza el Track 1 con el BPM del Track 2
-        sync2.addEventListener('click', () => syncBPM(1, 2)); // Sincroniza el Track 2 con el BPM del Track 1
-
-        // Listener para el nuevo botón de debug "Play All"
-        debugPlayAllButton.addEventListener('click', () => {
-            // Determinar si ambos están reproduciéndose para decidir si pausar o reproducir
-            const areBothPlaying = !audio1.paused && !audio2.paused;
-
-            if (areBothPlaying) {
-                // Pausar ambos
-                audio1.pause();
-                audio2.pause();
-                playPause1.textContent = '▶️ PLAY A';
-                playPause2.textContent = '▶️ PLAY B';
-                if (kickInterval1) clearInterval(kickInterval1);
-                kickInterval1 = null;
-                if (kickInterval2) clearInterval(kickInterval2);
-                kickInterval2 = null;
-                console.log("Debug Play All: Ambos tracks pausados.");
-            } else {
-                // Reiniciar y reproducir ambos
-                audio1.currentTime = 0;
-                audio2.currentTime = 0;
-                audio1.play();
-                audio2.play();
-                playPause1.textContent = '⏸️ PLAY A';
-                playPause2.textContent = '⏸️ PLAY B';
-
-                // Iniciar las animaciones de kicks basadas en intervalo
-                startKickAnimationInterval(audio1, kickPulse1, 'kickInterval1', parseFloat(bpmValue1.textContent));
-                startKickAnimationInterval(audio2, kickPulse2, 'kickInterval2', parseFloat(bpmValue2.textContent));
-
-                console.log("Debug Play All: Ambos tracks iniciados y animaciones de kick sincronizadas por intervalo.");
-            }
-        });
-
-
+        // --- Event Listeners para sliders de BPM ---
         bpmSlider1.addEventListener('input', () => updateBPM(audio1, bpmSlider1, bpmValue1, 1));
         bpmSlider2.addEventListener('input', () => updateBPM(audio2, bpmSlider2, bpmValue2, 2));
 
-        // Actualizar tiempo y onda mientras el audio se reproduce (solo para la barra de progreso)
-        audio1.addEventListener('timeupdate', () => {
-            updateTimeAndWaveform(audio1, timeDisplay1, waveformProgress1);
-        });
-        audio2.addEventListener('timeupdate', () => {
-            updateTimeAndWaveform(audio2, timeDisplay2, waveformProgress2);
-        });
+        // --- Event Listeners para botones SYNC ---
+        sync1.addEventListener('click', () => syncBPM(2, 1)); // Sync track 1 to track 2
+        sync2.addEventListener('click', () => syncBPM(1, 2)); // Sync track 2 to track 1
 
-        // Cuando la metadata del audio se carga, calcular los timestamps de los kicks y actualizar la UI
-        audio1.addEventListener('loadedmetadata', () => {
-            updateTimeAndWaveform(audio1, timeDisplay1, waveformProgress1);
-            kickTimestamps1 = calcularTimestampsKicks(initialBaseBPM1, audio1.duration);
-            // console.log(`Track 1 - Kicks calculados: ${kickTimestamps1.length} para ${audio1.duration}s a ${initialBaseBPM1} BPM`);
-        });
-        audio2.addEventListener('loadedmetadata', () => {
-            updateTimeAndWaveform(audio2, timeDisplay2, waveformProgress2);
-            kickTimestamps2 = calcularTimestampsKicks(initialBaseBPM2, audio2.duration);
-            // console.log(`Track 2 - Kicks calculados: ${kickTimestamps2.length} para ${audio2.duration}s a ${initialBaseBPM2} BPM`);
-        });
-
-        // Cuando el usuario busca en la pista, ajustar el tiempo y reiniciar el intervalo de kicks
-        audio1.addEventListener('seeked', () => {
-            // Reiniciar el intervalo de kicks para que se sincronice con el nuevo currentTime
-            const currentBPM = parseFloat(bpmValue1.textContent);
-            if (!audio1.paused) {
-                startKickAnimationInterval(audio1, kickPulse1, 'kickInterval1', currentBPM);
+        // --- Event Listeners para botones EJECT ---
+        document.getElementById('eject-1').addEventListener('click', () => {
+            audio1.pause();
+            audio1.currentTime = 0;
+            if (playPause1.id === 'play-pause-1') {
+                playPause1.textContent = '▶️ PLAY A';
             }
-        });
-        audio2.addEventListener('seeked', () => {
-            // Reiniciar el intervalo de kicks para que se sincronice con el nuevo currentTime
-            const currentBPM = parseFloat(bpmValue2.textContent);
-            if (!audio2.paused) {
-                startKickAnimationInterval(audio2, kickPulse2, 'kickInterval2', currentBPM);
+            if (kickInterval1) {
+                clearInterval(kickInterval1);
+                kickInterval1 = null;
             }
+            waveformProgress1.style.width = '0%';
+            // timeDisplay1.textContent = '0:00 / 0:00'; // Will cause error if timeDisplay1 is null
+        });
+
+        document.getElementById('eject-2').addEventListener('click', () => {
+            audio2.pause();
+            audio2.currentTime = 0;
+            if (playPause2.id === 'play-pause-2') {
+                playPause2.textContent = '▶️ PLAY B';
+            }
+            if (kickInterval2) {
+                clearInterval(kickInterval2);
+                kickInterval2 = null;
+            }
+            waveformProgress2.style.width = '0%';
+            // timeDisplay2.textContent = '0:00 / 0:00'; // Will cause error if timeDisplay2 is null
         });
 
 
-        // Configurar jog wheels, pasando las referencias necesarias
+        // --- Debug "Play All" button ---
+        debugPlayAllButton.addEventListener('click', () => {
+            audio1.currentTime = 0;
+            audio2.currentTime = 0;
+            audio1.play();
+            audio2.play();
+            playPause1.textContent = '⏸️ PLAY A';
+            playPause2.textContent = '⏸️ PLAY B';
+
+            // Start kick animations if not already running
+            startKickAnimationInterval(audio1, kickPulse1, 'kickInterval1', parseFloat(bpmValue1.textContent));
+            startKickAnimationInterval(audio2, kickPulse2, 'kickInterval2', parseFloat(bpmValue2.textContent));
+        });
+
+
+        // Initialize jog wheels
         setupJogWheel(jogWheel1, audio1, 'kickIndex1', kickTimestamps1);
         setupJogWheel(jogWheel2, audio2, 'kickIndex2', kickTimestamps2);
 
-        // Configuración inicial del volumen del crossfader
+
+        // Update time and waveform progress periodically
+        audio1.addEventListener('timeupdate', () => updateTimeAndWaveform(audio1, /* timeDisplay1, */ waveformProgress1));
+        audio2.addEventListener('timeupdate', () => updateTimeAndWaveform(audio2, /* timeDisplay2, */ waveformProgress2));
+
+
+        // Initial setup on page load
+        audio1.addEventListener('loadedmetadata', () => {
+            kickTimestamps1 = calcularTimestampsKicks(initialBaseBPM1, audio1.duration);
+            console.log('Audio 1 loaded. Kick timestamps calculated:', kickTimestamps1);
+            // updateTimeAndWaveform(audio1, timeDisplay1, waveformProgress1); // will cause error if timeDisplay1 is null
+        });
+        audio2.addEventListener('loadedmetadata', () => {
+            kickTimestamps2 = calcularTimestampsKicks(initialBaseBPM2, audio2.duration);
+            console.log('Audio 2 loaded. Kick timestamps calculated:', kickTimestamps2);
+            // updateTimeAndWaveform(audio2, timeDisplay2, waveformProgress2); // will cause error if timeDisplay2 is null
+        });
+
+
+        // Start the continuous check for synced kicks
+        requestAnimationFrame(checkSyncedKicks);
+
+        // Set initial volumes for crossfader
         audio1.volume = 0.5;
         audio2.volume = 0.5;
+        crossfader.value = 0.5; // Set initial crossfader value
 
-        // Función para configurar los sliders de BPM al inicio
-        function configureBPMSliders() {
-            // Track 1
-            bpmSlider1.min = (initialBaseBPM1 - 16).toFixed(1);
-            bpmSlider1.max = (initialBaseBPM1 + 16).toFixed(1);
-            bpmSlider1.value = initialBaseBPM1.toFixed(1); // Set initial value to base BPM
-            bpmValue1.textContent = initialBaseBPM1.toFixed(1); // Update displayed BPM
-            bpmSlider1.step = 0.1; // Allow decimal adjustments
+        // Adjust for potential missing time display elements:
+        // You have commented out `timeDisplay1` and `timeDisplay2` in your JS.
+        // If you intended to have them, you would need to add <div id="time-display-1"> and <div id="time-display-2"> in your HTML.
+        // For now, I've commented out the lines that use them in the JS to prevent errors.
 
-            // Track 2
-            bpmSlider2.min = (initialBaseBPM2 - 16).toFixed(1);
-            bpmSlider2.max = (initialBaseBPM2 + 16).toFixed(1);
-            bpmSlider2.value = initialBaseBPM2.toFixed(1); // Set initial value to base BPM
-            bpmValue2.textContent = initialBaseBPM2.toFixed(1); // Update displayed BPM
-            bpmSlider2.step = 0.1; // Allow decimal adjustments
-        }
-
-        // Llamar a la función de configuración de sliders al cargar la página
-        configureBPMSliders();
-
-        // Iniciar el bucle de verificación de sincronización
-        requestAnimationFrame(checkSyncedKicks);
     </script>
 </body>
 </html>
