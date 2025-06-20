@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DJ App Interface - Rhythm Challenge</title>
+    <style>
+        /* Basic Reset & Body Styles */
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* Full viewport height */
+            background-color: #1a1a1a; /* Dark background for the outside of the app */
+            font-family: 'Arial', sans-serif; /* A sensible default font */
+            -webkit-font-smoothing: antialiased; /* Smoother fonts for webkit browsers */
+            -moz-osx-font-smoothing: grayscale; /* Smoother fonts for firefox */
+            box-sizing: border-box; /* Ensures padding/border are included in element's total width and height */
+            overflow: hidden; /* Prevent scroll bars */
+        }
+
+        /* Overall Structure: The Main Container */
+        .dj-app-container {
+            width: 375px;
+            height: 650px;
+            background-color: #2F3642; /* A dark slate-grey/blue */
+            border-radius: 20px; /* Softly rounded corners for the app window */
+            overflow: hidden; /* Ensures child elements respect the rounded corners */
+            display: flex;
+            flex-direction: column; /* Stacks content vertically */
+            padding: 15px; /* Internal padding from the edges */
+            box-sizing: border-box; /* Includes padding in the width/height */
+            color: #FFFFFF; /* Default text color */
+            position: relative; /* For general positioning context */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); /* Subtle shadow for depth */
+        }
+
+        /* 1. Top Bar Elements */
+        .top-bar {
+            display: flex;
+            justify-content: space-between; /* Pushes elements to opposite ends */
+            align-items: center; /* Vertically aligns items in the middle */
+            width: 100%; /* Fills the width of the parent (after padding) */
+            height: 40px; /* Estimated height */
+            margin-bottom: 15px; /* Space below the top bar */
+        }
+
+        .close-button {
+            background: none;
+            border: none;
+            color: #FFFFFF; /* White 'X' */
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1; /* Ensures 'X' is vertically centered */
+            outline: none; /* Remove focus outline */
+            transition: color 0.2s ease;
+        }
+        .close-button:hover {
+            color: #FF5555;
+        }
+
+        /* Score Display */
+        .score-display {
+            color: #FFFFFF;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: right;
+            min-width: 80px; /* Ensure space for score */
+        }
+
+        /* 2. "CUAL VA MAS RAPIDO?" Label */
+        .rhythm-label-container {
+            width: fit-content; /* Width adapts to content */
+            padding: 8px 18px; /* Vertical and horizontal padding */
+            background-color: rgba(60, 150, 200, 0.2); /* Translucent blue background */
+            border: 1px solid #7ED7EA; /* Light blue border */
+            border-radius: 20px; /* Achieves the pill shape */
+            margin: 0 auto 15px auto; /* Centers horizontally, provides space below */
+            box-sizing: border-box;
+            box-shadow: 0 0 10px rgba(126, 215, 234, 0.4); /* Glow effect */
+        }
+
+        .rhythm-text {
+            color: #FFFFFF; /* White text */
+            font-size: 16px;
+            font-weight: bold;
+            letter-spacing: 1px; /* Spaced out letters */
+            text-transform: uppercase; /* All caps */
+        }
+
+        /* 3. Dual Central Panels */
+        .dual-panels-container {
+            display: flex;
+            justify-content: space-between; /* Creates space between the two panels */
+            width: 100%; /* Fills the width of the main container's padding area */
+            height: 280px; /* Estimated combined height for both panels */
+            gap: 15px; /* Space between the two panels */
+            margin-bottom: 20px; /* Space below the panels */
+        }
+
+        .info-panel {
+            flex: 1; /* Each panel takes equal width */
+            height: 100%; /* Fills the height of the container */
+            background-color: rgba(255, 255, 255, 0.1); /* Base for frosted effect */
+            backdrop-filter: blur(10px) saturate(1.5); /* Frosted glass effect */
+            -webkit-backdrop-filter: blur(10px) saturate(1.5); /* For Safari */
+            border-radius: 15px; /* Rounded corners */
+            border: 1px solid rgba(255, 255, 255, 0.2); /* Subtle light border */
+            position: relative; /* For internal patterns/gradients */
+            overflow: hidden; /* Ensures internal patterns are clipped */
+            box-sizing: border-box;
+            display: flex; /* For centering content within panels */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(0,0,0,0.3);
+            transition: border 0.3s ease, box-shadow 0.3s ease;
+        }
+        .info-panel.active-left {
+            border: 2px solid #90EE90; /* Brighter border when active */
+            box-shadow: 0 0 20px rgba(144, 238, 144, 0.7); /* Stronger glow */
+        }
+        .info-panel.active-right {
+            border: 2px solid #ADD8E6; /* Brighter border when active */
+            box-shadow: 0 0 20px rgba(173, 216, 230, 0.7); /* Stronger glow */
+        }
+        /* Panel Feedback */
+        .info-panel.correct {
+            border: 2px solid #4CAF50; /* Green for correct */
+            box-shadow: 0 0 20px rgba(76, 175, 80, 0.7);
+        }
+        .info-panel.incorrect {
+            border: 2px solid #F44336; /* Red for incorrect */
+            box-shadow: 0 0 20px rgba(244, 67, 54, 0.7);
+        }
+
+
+        /* Left Panel Specifics */
+        .left-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(144, 238, 144, 0.3) 0%, rgba(255, 192, 203, 0.3) 100%); /* Light green to pink gradient */
+            z-index: -1;
+        }
+        /* Abstract figures for left panel */
+        .left-panel .abstract-figure {
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            opacity: 0.7;
+            animation: beatLeft var(--beat-duration-left, 0.8s) infinite alternate ease-in-out;
+        }
+        .left-panel .abstract-figure:nth-child(1) { width: 50px; height: 50px; top: 20%; left: 15%; }
+        .left-panel .abstract-figure:nth-child(2) { width: 30px; height: 30px; top: 60%; left: 70%; }
+        .left-panel .abstract-figure:nth-child(3) { width: 40px; height: 40px; top: 80%; left: 30%; }
+
+        @keyframes beatLeft {
+            from { transform: scale(1); opacity: 0.7; }
+            to { transform: scale(1.15); opacity: 1; background-color: rgba(255, 255, 255, 0.5); }
+        }
+
+        /* Right Panel Specifics */
+        .right-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(173, 216, 230, 0.3) 0%, rgba(255, 99, 71, 0.3) 100%); /* Light blue to reddish gradient */
+            z-index: -1;
+        }
+        /* Abstract figures for right panel */
+        .right-panel .abstract-figure {
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            opacity: 0.7;
+            animation: beatRight var(--beat-duration-right, 0.6s) infinite alternate ease-in-out;
+        }
+        .right-panel .abstract-figure:nth-child(1) { width: 60px; height: 60px; top: 30%; left: 60%; }
+        .right-panel .abstract-figure:nth-child(2) { width: 45px; height: 45px; top: 10%; left: 30%; }
+        .right-panel .abstract-figure:nth-child(3) { width: 35px; height: 35px; top: 70%; left: 10%; }
+
+        @keyframes beatRight {
+            from { transform: scale(1); opacity: 0.7; }
+            to { transform: scale(1.15); opacity: 1; background-color: rgba(255, 255, 255, 0.5); }
+        }
+
+        /* NEW: Central Play Button Container */
+        .central-play-button-container {
+            display: flex;
+            justify-content: center; /* Center horizontally */
+            align-items: center; /* Center vertically */
+            margin: 20px 0; /* Add some vertical spacing */
+            height: 50px; /* Define height to ensure proper spacing */
+        }
+        .play-pause-button {
+            background-color: #4CAF50; /* Green for play */
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            padding: 12px 25px; /* Larger padding for a more prominent button */
+            cursor: pointer;
+            outline: none;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3); /* Stronger shadow */
+            margin: 0; /* Remove auto margin as it's now centered by parent flexbox */
+        }
+        .play-pause-button.paused {
+            background-color: #FFC107; /* Orange for pause */
+        }
+        .play-pause-button:active {
+            transform: translateY(2px); /* More pronounced press effect */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        /* 5. Dual Bottom "TAP TO SYNC" Buttons */
+        .bottom-buttons-container {
+            display: flex;
+            justify-content: space-between; /* Distributes space evenly */
+            width: 100%;
+            gap: 15px; /* Space between the two buttons */
+            margin-bottom: 25px; /* Space below the buttons */
+        }
+
+        .control-button {
+            flex: 1; /* Each button takes equal available space */
+            height: 100px; /* Fixed height for both buttons */
+            border-radius: 12px; /* Consistent rounded corners */
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px; /* Adjusted from 16px to 14px for better fit */
+            font-weight: bold;
+            text-transform: uppercase;
+            box-sizing: border-box;
+            outline: none; /* Remove focus outline */
+            transition: background 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease; /* Added opacity for disabled state */
+            text-align: center; /* Ensure text is centered within the button */
+            padding: 8px; /* Slightly adjust padding if needed after font-size change */
+        }
+
+        .yellow-button {
+            background: linear-gradient(to bottom, #FFD700, #FFA500); /* Gold to Orange gradient */
+            color: #FFFFFF; /* White text */
+            box-shadow: 0 4px 8px rgba(255, 165, 0, 0.4); /* Outer shadow for prominence */
+        }
+
+        .blue-button {
+            background: linear-gradient(to bottom, #42A5F5, #2196F3); /* Light Blue to darker Blue gradient */
+            color: #FFFFFF; /* White text */
+            box-shadow: 0 4px 8px rgba(33, 150, 243, 0.4); /* Outer shadow for prominence */
+        }
+        .control-button:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .control-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: translateY(0);
+        }
+
+        /* 6. Slider Control (Crossfader) */
+        .slider-container {
+            width: 100%;
+            margin-top: auto; /* Pushes the slider to the very bottom, effectively taking remaining space */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 30px; /* Space allocated for slider */
+            position: relative; /* For glow effect positioning */
+        }
+
+        .main-slider {
+            -webkit-appearance: none; /* Override default CSS for slider */
+            width: 100%;
+            height: 8px; /* Height of the track */
+            background: #3C424D; /* Dark grey track */
+            border-radius: 5px;
+            outline: none;
+            opacity: 1;
+            transition: opacity .2s;
+            margin: 0; /* Remove default margin */
+            z-index: 2; /* Above glow */
+            position: relative;
+        }
+
+        /* Style for the slider thumb (handle) */
+        .main-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px; /* Width of the thumb */
+            height: 25px; /* Height of the thumb */
+            background: #FFD700; /* Yellow/gold color for the thumb */
+            border-radius: 8px; /* Slightly rounded rectangle */
+            cursor: grab; /* Indicates draggable */
+            border: 2px solid #FFFFFF; /* White border around thumb */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            margin-top: -8.5px; /* Adjust to vertically center thumb on track */
+            transition: background 0.2s ease, border-radius 0.2s ease, width 0.2s ease, height 0.2s ease, box-shadow 0.2s ease; /* Added box-shadow to transition */
+        }
+
+        .main-slider::-webkit-slider-thumb:hover { /* NEW: Hover effect for thumb */
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.7); /* Larger glow on hover */
+        }
+        .main-slider::-webkit-slider-thumb:active {
+            cursor: grabbing;
+            width: 28px;
+            height: 28px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4); /* More pronounced active shadow */
+        }
+
+        .main-slider::-moz-range-thumb {
+            width: 25px;
+            height: 25px;
+            background: #FFD700;
+            border-radius: 8px;
+            cursor: grab;
+            border: 2px solid #FFFFFF;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            transition: background 0.2s ease, border-radius 0.2s ease, width 0.2s ease, height 0.2s ease, box-shadow 0.2s ease;
+        }
+        .main-slider::-moz-range-thumb:hover { /* NEW: Hover effect for thumb */
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
+        }
+        .main-slider::-moz-range-thumb:active {
+            cursor: grabbing;
+            width: 28px;
+            height: 28px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        }
+
+        /* Track styling for crossfader visual feedback */
+        .main-slider::-webkit-slider-runnable-track {
+            height: 8px;
+            border-radius: 5px;
+            background: linear-gradient(to right, #4CAF50, #8BC34A, #3C424D); /* Green for left, transitioning to dark grey for right */
+            background-size: 100% 100%;
+        }
+
+        .main-slider::-moz-range-track {
+            height: 8px;
+            border-radius: 5px;
+            background: linear-gradient(to right, #4CAF50, #8BC34A, #3C424D); /* Green for left, transitioning to dark grey for right */
+            background-size: 100% 100%;
+        }
+        .main-slider:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Crossfader Glow Effect */
+        .crossfader-glow {
+            position: absolute;
+            height: 12px; /* Slightly thicker than track */
+            border-radius: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1; /* Below the actual slider */
+            transition: all 0.1s ease-out; /* Smooth transition for glow */
+            box-shadow: 0 0 15px rgba(0,0,0,0.5); /* Base shadow */
+            opacity: 0; /* Hidden by default */
+        }
+        .crossfader-glow.active {
+            opacity: 1;
+        }
+        .crossfader-glow.left-glow {
+            left: 0;
+            background: linear-gradient(to right, #4CAF50, rgba(144, 238, 144, 0)); /* Green fading out */
+        }
+        .crossfader-glow.right-glow {
+            right: 0;
+            background: linear-gradient(to left, #2196F3, rgba(173, 216, 230, 0)); /* Blue fading out */
+        }
+
+
+        /* Additional styles for BPM display and result messages within panels */
+        .panel-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            width: 100%;
+            position: relative; /* For absolute positioning of text */
+            z-index: 1; /* Above abstract figures */
+        }
+        .panel-bpm {
+            font-size: 4em;
+            color: #FFFFFF;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            margin-bottom: 10px;
+            display: none; /* Hidden by default, shown when played */
+        }
+        .panel-status {
+            font-size: 1.2em;
+            color: #E0E0E0;
+            margin-top: 10px;
+            text-align: center;
+            padding: 0 10px;
+            display: none; /* Hidden by default */
+        }
+        .initial-text {
+            font-size: 1.5em;
+            color: #CCCCCC;
+            text-align: center;
+            padding: 20px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="dj-app-container">
+        <div class="top-bar">
+            <button class="close-button">X</button>
+            <div class="score-display" id="scoreDisplay">PUNTOS: 0</div>
+        </div>
+
+        <div class="rhythm-label-container">
+            <span class="rhythm-text">CUAL VA MAS RAPIDO?</span>
+        </div>
+
+        <div class="dual-panels-container">
+            <div class="info-panel left-panel" id="leftPanel">
+                <div class="abstract-figure"></div>
+                <div class="abstract-figure"></div>
+                <div class="abstract-figure"></div>
+                <div class="panel-content">
+                    <span class="initial-text">TRACK 1</span>
+                    <span class="panel-bpm" id="bpmLeft"></span>
+                    <span class="panel-status" id="statusLeft"></span>
+                </div>
+            </div>
+            <div class="info-panel right-panel" id="rightPanel">
+                <div class="abstract-figure"></div>
+                <div class="abstract-figure"></div>
+                <div class="abstract-figure"></div>
+                <div class="panel-content">
+                    <span class="initial-text">TRACK 2</span>
+                    <span class="panel-bpm" id="bpmRight"></span>
+                    <span class="panel-status" id="statusRight"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="central-play-button-container">
+            <button class="play-pause-button" id="playPauseButton">PLAY</button>
+        </div>
+
+        <div class="bottom-buttons-container">
+            <button class="control-button tap-to-sync-button yellow-button" id="guessLeft">
+                TRACK 1 ES MAS RAPIDO
+            </button>
+            <button class="control-button tap-to-sync-button blue-button" id="guessRight">
+                TRACK 2 ES MAS RAPIDO
+            </button>
+        </div>
+
+        <div class="slider-container">
+            <div class="crossfader-glow left-glow" id="leftGlow"></div>
+            <div class="crossfader-glow right-glow" id="rightGlow"></div>
+            <input type="range" min="0" max="100" value="50" class="main-slider" id="crossfader">
+        </div>
+    </div>
+
+    <audio id="audio1" src="https://raw.githubusercontent.com/DjLess/MP3_repo/main/SCREECHMASTER.mp3" preload="auto"></audio>
+    <audio id="audio2" src="https://raw.githubusercontent.com/DjLess/MP3_repo/main/Somewhere%20Over%20The%20Rainbow%20-%20Polizzi%20Vs%20Richter%20(%20Israel%20IZ%20Techno%20Bootleg).mp3" preload="auto"></audio>
+    <audio id="correctSound" src="https://raw.githubusercontent.com/DjLess/MP3_repo/main/correct_sound.mp3" preload="auto"></audio>
+    <audio id="incorrectSound" src="https://raw.githubusercontent.com/DjLess/MP3_repo/main/incorrect_sound.mp3" preload="auto"></audio>
+
+
+    <script>
+        const crossfader = document.getElementById('crossfader');
+        const audio1 = document.getElementById('audio1');
+        const audio2 = document.getElementById('audio2');
+        
+        const guessLeftButton = document.getElementById('guessLeft');
+        const guessRightButton = document.getElementById('guessRight');
+        const rhythmText = document.querySelector('.rhythm-text');
+        const bpmLeftDisplay = document.getElementById('bpmLeft');
+        const bpmRightDisplay = document.getElementById('bpmRight');
+        const statusLeft = document.getElementById('statusLeft');
+        const statusRight = document.getElementById('statusRight');
+        const initialTextLeft = document.querySelector('#leftPanel .initial-text');
+        const initialTextRight = document.querySelector('#rightPanel .initial-text');
+        
+        const playPauseButton = document.getElementById('playPauseButton');
+        const leftGlow = document.getElementById('leftGlow');
+        const rightGlow = document.getElementById('rightGlow');
+        const leftPanel = document.getElementById('leftPanel');
+        const rightPanel = document.getElementById('rightPanel');
+
+        const scoreDisplay = document.getElementById('scoreDisplay'); 
+
+        const correctSound = document.getElementById('correctSound');
+        const incorrectSound = document.getElementById('incorrectSound');
+
+        // Variables para las fuentes de audio asignadas dinámicamente
+        let leftAudioSource;
+        let rightAudioSource;
+
+        // NUEVO: BPMs base para cada track, según los tags proporcionados por el usuario
+        const initialBaseBPM1 = 145; // Para audio1 (SCREECHMASTER.mp3)
+        const initialBaseBPM2 = 130; // Para audio2 (Somewhere Over The Rainbow.mp3)
+
+        // Rango de BPM para el juego (velocidad real de las canciones)
+        const GAME_BPM_MIN = 115;
+        const GAME_BPM_MAX = 200;
+        // Diferencia mínima para que los BPMs sean perceptibles
+        const BPM_DIFFERENCE_THRESHOLD = 5; 
+
+        let actualBPM1 = 0; 
+        let actualBPM2 = 0; 
+
+        let gameStarted = false;
+        let isPlaying = false; 
+        let score = 0; 
+        let roundActive = false; 
+
+        // --- Funcionalidad del Crossfader ---
+        crossfader.addEventListener('input', () => {
+            const value = crossfader.value; 
+            // Controla el volumen de las fuentes de audio asignadas dinámicamente
+            if (leftAudioSource && rightAudioSource) { // Asegúrate de que las fuentes existan
+                leftAudioSource.volume = 1 - (value / 100); 
+                rightAudioSource.volume = value / 100;       
+            }
+
+            updateCrossfaderGlow(value);
+            updatePanelGlow(value);
+
+            if (!gameStarted && isPlaying && value !== 50) { 
+                startGameLogic();
+            }
+        });
+
+        // --- Asignación Aleatoria de Canciones a Tracks ---
+        function assignRandomTracks() {
+            // Asigna audio1 y audio2 aleatoriamente a leftAudioSource y rightAudioSource
+            if (Math.random() < 0.5) {
+                leftAudioSource = audio1;
+                rightAudioSource = audio2;
+            } else {
+                leftAudioSource = audio2;
+                rightAudioSource = audio1;
+            }
+            // Asegura que los volúmenes iniciales se apliquen a las nuevas asignaciones
+            leftAudioSource.volume = 0.5;
+            rightAudioSource.volume = 0.5;
+        }
+
+        // --- Lógica de Generación de BPMs (para la velocidad REAL de las canciones) ---
+        function generateBPMs() {
+            let bpm1_val, bpm2_val;
+            do {
+                bpm1_val = Math.floor(Math.random() * (GAME_BPM_MAX - GAME_BPM_MIN + 1)) + GAME_BPM_MIN;
+                bpm2_val = Math.floor(Math.random() * (GAME_BPM_MAX - GAME_BPM_MIN + 1)) + GAME_BPM_MIN;
+            } while (Math.abs(bpm1_val - bpm2_val) < BPM_DIFFERENCE_THRESHOLD); // Asegura una diferencia mínima
+
+            actualBPM1 = bpm1_val;
+            actualBPM2 = bpm2_val;
+        }
+
+        function startGameLogic() {
+            gameStarted = true;
+            roundActive = true;
+            
+            // Genera los BPMs para esta ronda (velocidad real de las canciones)
+            generateBPMs(); 
+
+            // Determina el BPM original de la canción asignada a cada lado
+            let originalBPM_left = (leftAudioSource === audio1) ? initialBaseBPM1 : initialBaseBPM2;
+            let originalBPM_right = (rightAudioSource === audio1) ? initialBaseBPM1 : initialBaseBPM2;
+
+            // Aplica la velocidad de reproducción a las fuentes de audio asignadas dinámicamente
+            // Esto asegura que la velocidad real de la canción coincida con los BPMs generados.
+            leftAudioSource.playbackRate = actualBPM1 / originalBPM_left;
+            rightAudioSource.playbackRate = actualBPM2 / originalBPM_right;
+
+            // Actualiza la velocidad de las animaciones de las figuras abstractas
+            document.documentElement.style.setProperty('--beat-duration-left', (60 / actualBPM1) + 's');
+            document.documentElement.style.setProperty('--beat-duration-right', (60 / actualBPM2) + 's');
+
+            bpmLeftDisplay.style.display = 'none';
+            bpmRightDisplay.style.display = 'none';
+            statusLeft.style.display = 'none';
+            statusRight.style.display = 'none';
+            initialTextLeft.style.display = 'block';
+            initialTextRight.style.display = 'block';
+
+            rhythmText.textContent = "CUAL VA MAS RAPIDO?";
+
+            guessLeftButton.disabled = false;
+            guessRightButton.disabled = false;
+            crossfader.disabled = false;
+            leftPanel.classList.remove('correct', 'incorrect');
+            rightPanel.classList.remove('correct', 'incorrect');
+        }
+
+        // --- Efectos de Glow del Crossfader y Paneles ---
+        function updateCrossfaderGlow(value) {
+            const sliderWidth = crossfader.offsetWidth;
+            const threshold = 20; 
+
+            if (value < 50) { 
+                leftGlow.classList.add('active');
+                const adjustedValue = 50 - value; 
+                leftGlow.style.width = `${sliderWidth * (adjustedValue / 50) * 0.7}px`; 
+                leftGlow.style.opacity = Math.min(1, adjustedValue / threshold); 
+            } else {
+                leftGlow.classList.remove('active');
+            }
+
+            if (value > 50) { 
+                rightGlow.classList.add('active');
+                const adjustedValue = value - 50; 
+                rightGlow.style.width = `${sliderWidth * (adjustedValue / 50) * 0.7}px`; 
+                rightGlow.style.opacity = Math.min(1, adjustedValue / threshold); 
+            } else {
+                rightGlow.classList.remove('active');
+            }
+
+            if (value === 50) {
+                 leftGlow.style.width = `${sliderWidth * 0.15}px`;
+                 leftGlow.style.opacity = 0.4;
+                 rightGlow.style.width = `${sliderWidth * 0.15}px`;
+                 rightGlow.style.opacity = 0.4;
+                 leftGlow.classList.add('active');
+                 rightGlow.classList.add('active');
+            } else { 
+                // Si no está en 50, asegura que se remueva el glow "neutral" cuando se aleja del centro
+                if (value <= 45 || value >= 55) { 
+                    leftGlow.classList.remove('active');
+                    rightGlow.classList.remove('active');
+                }
+            }
+        }
+
+        function updatePanelGlow(value) {
+            if (value < 45) { 
+                leftPanel.classList.add('active-left');
+                rightPanel.classList.remove('active-right');
+            } else if (value > 55) { 
+                leftPanel.classList.remove('active-left');
+                rightPanel.classList.add('active-right');
+            } else { 
+                leftPanel.classList.remove('active-left');
+                rightPanel.classList.remove('active-right');
+            }
+        }
+
+        // --- Sonidos ---
+        function playCorrectSound() {
+            correctSound.currentTime = 0; 
+            correctSound.play().catch(e => console.error("Error playing correct sound:", e));
+        }
+
+        function playIncorrectSound() {
+            incorrectSound.currentTime = 0; 
+            incorrectSound.play().catch(e => console.error("Error playing incorrect sound:", e));
+        }
+
+        // --- Funcionalidad de los Botones de Adivinanza ---
+        guessLeftButton.addEventListener('click', () => {
+            if (!gameStarted || !roundActive) {
+                rhythmText.textContent = "¡PRESIONA PLAY PARA EMPEZAR!";
+                return;
+            }
+            evaluateGuess(actualBPM1, actualBPM2, 'left');
+        });
+
+        guessRightButton.addEventListener('click', () => {
+            if (!gameStarted || !roundActive) {
+                rhythmText.textContent = "¡PRESIONA PLAY PARA EMPEZAR!";
+                return;
+            }
+            evaluateGuess(actualBPM1, actualBPM2, 'right');
+        });
+
+        function evaluateGuess(bpm1, bpm2, guess) {
+            roundActive = false; // La ronda ha terminado después de la adivinanza
+            let userWins = false;
+
+            if (bpm1 > bpm2 && guess === 'left') {
+                userWins = true;
+            } else if (bpm2 > bpm1 && guess === 'right') {
+                userWins = true;
+            }
+
+            // Mostrar los BPMs reales y los estados
+            initialTextLeft.style.display = 'none';
+            initialTextRight.style.display = 'none';
+            bpmLeftDisplay.textContent = bpm1 + ' BPM'; 
+            bpmRightDisplay.textContent = bpm2 + ' BPM';
+            bpmLeftDisplay.style.display = 'block';
+            bpmRightDisplay.style.display = 'block';
+            statusLeft.style.display = 'block';
+            statusRight.style.display = 'block';
+
+            // Deshabilitar controles mientras se muestra el resultado
+            crossfader.disabled = true;
+            guessLeftButton.disabled = true;
+            guessRightButton.disabled = true;
+            
+            leftPanel.classList.remove('active-left', 'active-right'); 
+            rightPanel.classList.remove('active-left', 'active-right');
+
+            // Determinar ganador/perdedor para la retroalimentación visual y de texto
+            const winnerPanel = (bpm1 > bpm2) ? leftPanel : rightPanel;
+            const loserPanel = (bpm1 > bpm2) ? rightPanel : leftPanel;
+
+            const winnerStatusDisplay = (bpm1 > bpm2) ? statusLeft : statusRight;
+            const loserStatusDisplay = (bpm1 > bpm2) ? statusRight : statusLeft;
+
+            winnerStatusDisplay.textContent = 'GANADOR';
+            loserStatusDisplay.textContent = 'PERDEDOR';
+
+            if (userWins) {
+                score++;
+                rhythmText.textContent = "¡CORRECTO! +1 PUNTO.";
+                winnerPanel.classList.add('correct');
+                loserPanel.classList.add('incorrect'); 
+                playCorrectSound();
+                playPauseButton.textContent = "SIGUIENTE RONDA"; // Botón para continuar
+            } else {
+                rhythmText.textContent = `INCORRECTO. ¡GAME OVER! PUNTOS: ${score}`;
+                // El panel correcto sigue siendo el ganador, el incorrecto es el que el usuario eligió
+                winnerPanel.classList.add('correct'); 
+                loserPanel.classList.add('incorrect'); 
+                playIncorrectSound();
+                gameStarted = false; // El juego termina si fallas
+                playPauseButton.textContent = "REINTENTAR"; // Botón para reiniciar
+            }
+            updateScoreDisplay(); 
+
+            // Después de un tiempo, limpiar los estados y preparar para la siguiente ronda o reinicio
+            setTimeout(() => {
+                leftPanel.classList.remove('correct', 'incorrect');
+                rightPanel.classList.remove('correct', 'incorrect');
+                if (gameStarted) { 
+                    // Si el juego sigue activo (respuesta correcta), prepara una nueva ronda
+                    startGameLogic();
+                } else { 
+                    // Si es Game Over, solo habilitar el botón de reinicio
+                    crossfader.disabled = true;
+                    guessLeftButton.disabled = true;
+                    guessRightButton.disabled = true;
+                    playPauseButton.disabled = false; 
+                }
+            }, 3000); 
+        }
+
+        function resetGame() {
+            gameStarted = false;
+            roundActive = false;
+            score = 0; 
+            updateScoreDisplay(); 
+            
+            // Asigna canciones aleatorias al reiniciar
+            assignRandomTracks(); 
+
+            // Usa los BPMs base para el estado de reposo de las animaciones abstractas
+            // y para la velocidad de reproducción inicial
+            let originalBPM_audio1 = initialBaseBPM1;
+            let originalBPM_audio2 = initialBaseBPM2;
+
+            // Asegura que los audios estén en el estado correcto para el "play" inicial
+            if (audio1) {
+                audio1.pause();
+                audio1.currentTime = 0;
+                audio1.playbackRate = 1; // Resetear playbackRate a normal (1.0 = original speed)
+            }
+            if (audio2) {
+                audio2.pause();
+                audio2.currentTime = 0;
+                audio2.playbackRate = 1; // Resetear playbackRate a normal
+            }
+            
+            // Ajustar los BPMs iniciales de las animaciones según los tags
+            actualBPM1 = originalBPM_audio1;
+            actualBPM2 = originalBPM_audio2;
+
+            rhythmText.textContent = "PRESIONA PLAY PARA EMPEZAR"; 
+            initialTextLeft.style.display = 'block';
+            initialTextRight.style.display = 'block';
+            bpmLeftDisplay.style.display = 'none';
+            bpmRightDisplay.style.display = 'none';
+            statusLeft.style.display = 'none';
+            statusRight.style.display = 'none';
+
+            crossfader.value = 50; 
+            // Vuelve a establecer volúmenes iniciales para las fuentes ya asignadas
+            if (leftAudioSource) leftAudioSource.volume = 0.5;
+            if (rightAudioSource) rightAudioSource.volume = 0.5;
+            
+            isPlaying = false;
+            playPauseButton.textContent = "PLAY";
+            playPauseButton.classList.remove('paused');
+
+            crossfader.disabled = false;
+            guessLeftButton.disabled = false;
+            guessRightButton.disabled = false;
+            playPauseButton.disabled = false;
+
+            // Configura las animaciones a los BPMs iniciales del estado de reposo
+            document.documentElement.style.setProperty('--beat-duration-left', (60 / actualBPM1) + 's');
+            document.documentElement.style.setProperty('--beat-duration-right', (60 / actualBPM2) + 's');
+
+            updateCrossfaderGlow(crossfader.value); 
+            updatePanelGlow(crossfader.value); 
+        }
+
+        // --- Actualizar Display de Puntuación ---
+        function updateScoreDisplay() {
+            scoreDisplay.textContent = `PUNTOS: ${score}`;
+        }
+
+        // --- Funcionalidad del Botón Universal Play/Pause ---
+        playPauseButton.addEventListener('click', () => {
+            if (playPauseButton.textContent === "REINTENTAR") {
+                resetGame(); 
+                return;
+            }
+            if (playPauseButton.textContent === "SIGUIENTE RONDA") {
+                // Forzar el inicio de una nueva ronda si no está en curso
+                startGameLogic();
+                // También es importante que los audios empiecen a sonar si no lo hacen
+                if (!isPlaying) {
+                    leftAudioSource.play().catch(e => console.error("Error playing left audio:", e));
+                    rightAudioSource.play().catch(e => console.error("Error playing right audio:", e));
+                    isPlaying = true;
+                    playPauseButton.textContent = "PAUSE";
+                    playPauseButton.classList.remove('paused');
+                }
+                return;
+            }
+
+            if (isPlaying) {
+                leftAudioSource.pause();
+                rightAudioSource.pause();
+                playPauseButton.textContent = "PLAY";
+                playPauseButton.classList.add('paused');
+                isPlaying = false;
+                roundActive = false; 
+                rhythmText.textContent = "JUEGO EN PAUSA";
+            } else {
+                leftAudioSource.play().catch(e => console.error("Error playing left audio:", e));
+                rightAudioSource.play().catch(e => console.error("Error playing right audio:", e));
+                playPauseButton.textContent = "PAUSE";
+                playPauseButton.classList.remove('paused');
+                isPlaying = true;
+                if (!gameStarted || !roundActive) { 
+                    startGameLogic(); 
+                }
+            }
+        });
+
+
+        // Inicializa el estado del juego al cargar
+        resetGame();
+
+        // Llamada inicial para actualizar el glow según la posición por defecto del crossfader
+        crossfader.dispatchEvent(new Event('input'));
+
+    </script>
+</body>
+</html>
