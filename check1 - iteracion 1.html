@@ -24,12 +24,12 @@
             background-color: #1a202c;
             border-radius: 40px;
             box-shadow: 0 0 0 8px #2d3748,
-                                0 0 0 12px #1a202c,
-                                0 20px 50px rgba(0, 0, 0, 0.7);
+                                 0 0 0 12px #1a202c,
+                                 0 20px 50px rgba(0, 0, 0, 0.7);
             position: relative;
             overflow: hidden;
-            display: flex; /* Usar flexbox para el diseño principal */
             flex-direction: column;
+            padding-bottom: 50px;
         }
 
         .notch {
@@ -48,7 +48,6 @@
         /* Estilos de la onda de audio (simulada) */
         .waveform {
             height: 40px;
-            /* Simulated waveform background */
             background: repeating-linear-gradient(90deg,
                 #2d3748 0%, #2d3748 5%,
                 #4a5568 5%, #4a5568 10%,
@@ -61,7 +60,7 @@
                 #2d3748 40%, #2d3748 45%,
                 #4a5568 45%, #4a5568 50%
             );
-            background-size: 200px 100%; /* Adjust size for repeating pattern */
+            background-size: 200px 100%;
             border-radius: 8px;
             overflow: hidden;
             position: relative;
@@ -70,7 +69,6 @@
         }
 
         .waveform.red {
-            /* Different simulated waveform for the second track */
             background: repeating-linear-gradient(90deg,
                 #374151 0%, #374151 5%,
                 #4b5563 5%, #4b5563 10%,
@@ -88,83 +86,71 @@
 
         .waveform-progress {
             height: 100%;
-            background-color: rgba(66, 153, 225, 0.7); /* Blue overlay for progress */
+            background-color: rgba(66, 153, 225, 0.7);
             position: absolute;
             left: 0;
             top: 0;
             width: 0%;
-            transition: width 0.1s linear; /* Smooth progress transition */
+            transition: width 0.1s linear;
             border-radius: 8px;
         }
 
         /* Estilos del jog wheel */
         .jog-wheel {
-            width: 200px; /* Tamaño del jog wheel */
+            width: 200px;
             height: 200px;
             border-radius: 50%;
             border: 4px solid #4a5568;
             background-color: #2d3748;
-            position: absolute;
-            top: 50%; /* Centrar verticalmente en su contenedor relativo */
-            transform: translateY(-50%); /* Ajuste para centrado vertical */
             cursor: grab;
             display: flex;
             align-items: center;
             justify-content: center;
             box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.6);
-            transition: transform 0.1s ease-out;
+            /* Removed transition here, handled by JS requestAnimationFrame for smoothness */
             z-index: 10;
-        }
-
-        .jog-wheel.left {
-            left: -70px; /* Ocultar 70px de la izquierda (200px * 0.35) */
-        }
-
-        .jog-wheel.right {
-            right: -70px; /* Ocultar 70px de la derecha (200px * 0.35) */
         }
 
         .jog-wheel:active {
             cursor: grabbing;
         }
 
-        .jog-indicator {
-            width: 20px;
-            height: 20px;
-            background-color: #cbd5e0;
-            border-radius: 50%;
-            position: absolute;
-            top: 20px; /* Ajustar posición del indicador para el nuevo tamaño */
-            left: 50%;
-            transform: translateX(-50%);
+        /* NEW: Styles for the SVG trace */
+        .jog-trace-svg {
+            position: absolute; /* Position it relative to jog-wheel */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg); /* Rotate SVG to start trace at top */
+            filter: drop-shadow(0 0 5px rgba(255,255,255,0.7)); /* Glow effect */
         }
+
+        /* Removed old .jog-indicator and @keyframes throb */
 
         /* Estilos del contenedor del visualizador de kick */
         .kick-visualizer-container {
-            width: 80px;
-            height: 80px;
+            width: 100px;
+            height: 40px;
             border-radius: 10px;
-            background-color: #374151; /* Background for the visualizer area */
+            background-color: #374151;
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
             position: relative;
-            margin-bottom: 10px; /* Espacio debajo del visualizador */
-            margin-top: -100px; /* Mueve el elemento 50px hacia arriba */
         }
 
         .kick-pulse-element {
             width: 40px;
             height: 40px;
-            background-color: #4299e1; /* Blue color for the pulse */
-            border-radius: 5px; /* Slightly rounded square */
-            opacity: 0; /* Start hidden */
-            transform: scale(0.5); /* Start small */
-            transition: opacity 0.05s ease-out, transform 0.05s ease-out; /* Más rápido */
+            background-color: #4299e1;
+            border-radius: 5px;
+            opacity: 0;
+            transform: scale(0.5);
+            transition: opacity 0.05s ease-out, transform 0.05s ease-out;
         }
 
-        /* Animación para el pulso del kick */
         .kick-pulse-element.active {
             transform: scale(1.1);
             opacity: 1;
@@ -176,7 +162,7 @@
             top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background-color: rgba(74, 222, 128, 0.8); /* Verde semi-transparente */
+            background-color: rgba(74, 222, 128, 0.8);
             color: white;
             padding: 8px 16px;
             border-radius: 8px;
@@ -193,17 +179,16 @@
 
         /* Estilo para el botón de debug */
         #debug-play-all {
-            position: absolute;
-            bottom: 70px; /* Originalmente 20px, +50px = 70px para subir */
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background-color: #6b7280; /* Gray */
+            background-color: #6b7280;
             color: white;
             padding: 10px 20px;
             border-radius: 8px;
             font-weight: bold;
             cursor: pointer;
-            z-index: 40; /* Asegurarse de que esté por encima de otros elementos */
+            z-index: 50;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             transition: background-color 0.2s ease-in-out;
         }
@@ -216,32 +201,24 @@
         .vertical-fader {
             -webkit-appearance: none;
             appearance: none;
-            width: 100px; /* Será el alto visible del fader */
-            height: 12px; /* Será el ancho visible del fader */
-            background: #4a5568; /* Color de la pista */
+            width: 150px;
+            height: 12px;
+            background: #4a5568;
             outline: none;
             border-radius: 6px;
-            position: relative;
             z-index: 1;
-            /* Aplicar la rotación para hacerlo vertical */
-            transform: rotate(-90deg); /* Gira -90 grados para que el "pulgar" se mueva verticalmente */
-            transform-origin: center; /* Asegurarse de que rote desde el centro */
-            margin: 0; /* Reiniciar márgenes */
-            /* Ajustar la posición después de la rotación */
-            position: absolute; /* Para posicionarlo con top/left */
-            left: 50%; /* Centrar horizontalmente en su contenedor original */
-            top: 50%; /* Centrar verticalmente en su contenedor original */
-            margin-left: -50px; /* Offset para centrar la longitud del slider */
-            margin-top: 55px; /* Offset para centrar la altura del slider */
+            transform: rotate(-90deg);
+            transform-origin: center;
+            margin: 0;
         }
 
         .vertical-fader::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 30px; /* Ancho del thumb (visualmente más ancho) */
-            height: 20px; /* Alto del thumb (visualemente más bajo) */
-            background: #63b3ed; /* Color del thumb */
-            border-radius: 4px; /* Bordes ligeramente redondeados */
+            width: 30px;
+            height: 20px;
+            background: #63b3ed;
+            border-radius: 4px;
             cursor: grab;
             border: 2px solid #a0aec0;
             box-shadow: 0 2px 4px rgba(0,0,0,0.3);
@@ -257,93 +234,42 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
 
-        /* Contenedor principal de la sección de mezcla */
-        .mixer-section {
-            position: relative;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column; /* Cambiado a columna para organizar de arriba abajo */
-            justify-content: flex-end; /* Empujar contenido hacia abajo */
-            align-items: center;
-            padding: 0 16px; /* Padding para que los jog wheels no se salgan demasiado */
-            overflow: hidden; /* Para que los jog wheels se recorten */
-            /* Añadido para que el contenido se ajuste al espacio disponible */
-            width: 100%;
-            height: 100%;
-        }
-
-        /* Contenedor para los faders y botones centrales */
-        .faders-buttons-area {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-            max-width: 200px; /* Ancho máximo para el área central */
-            margin-bottom: 20px; /* Espacio antes del crossfader */
-            z-index: 20; /* Asegurar que esté por encima de los jog wheels */
-            margin-top: auto; /* Push this section to the bottom, above crossfader */
-        }
-
-       .fader-group {
-            display: flex;
-            justify-content: center; /* Esto centrará las dos .control-column */
-            gap: 5px; /* Añade espacio entre las dos columnas (ajusta este valor) */
-            width: 100%;
-            margin-bottom: 20px;
-            align-items: flex-start;
-        }
-
-        .control-column {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            position: relative; /* Para posicionar el fader rotado */
-            height: 200px; /* Darle altura suficiente para el fader y el resto */
-            padding-bottom: 10px; /* Espacio extra en la parte inferior */
-            padding-top: 60px; /* Ajustado para mover el visualizador de kick hacia abajo*/
-        }
-
-        .control-column h2 {
+        /* Adjusted styles for elements that were in fader-group-abs, now individual */
+       .bpm-label-abs { /* New class for the BPM text element */
             font-size: 0.875rem; /* text-sm */
             font-weight: 600;
             color: #90cdf4;
-            margin-bottom: 4px;
+            /* margin-bottom: 4px; */ /* Removed as individual positioning */
         }
 
-        .control-column .bpm-value {
+        .bpm-value {
             font-size: 1.125rem; /* text-lg */
-            margin-bottom: 8px; /* Espacio debajo del BPM */
-        }
-
-        .play-cue-buttons {
-            display: flex;
-            gap: 10px; /* Espacio entre los botones PLAY y CUE */
-            margin-top: 10px; /* Espacio entre los faders y los botones */
+            /* margin-bottom: 8px; */ /* Removed as individual positioning */
         }
 
         .play-button, .cue-button {
-            padding: 5px 10px; /* Reduced padding */
-            font-size: 0.75rem; /* Smaller font size */
-            border-radius: 66px; /* Slightly smaller border radius */
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Reduced shadow */
+            padding: 8px 12px;
+            font-size: 0.875rem;
+            border-radius: 9999px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             transition: background-color 0.2s ease-in-out;
-            width: 80px; /* Fixed width for uniformity */
+            width: 90px;
             text-align: center;
         }
         .play-button {
-            background-color: #63b3ed; /* blue-400 */
+            background-color: #63b3ed;
             color: white;
         }
         .play-button:hover {
-            background-color: #4299e1; /* blue-500 */
+            background-color: #4299e1;
         }
 
         .cue-button {
-            background-color: #f6ad55; /* Orange-ish color */
+            background-color: #f6ad55;
             color: white;
         }
         .cue-button:hover {
-            background-color: #ed8936; /* Darker orange */
+            background-color: #ed8936;
         }
 
         /* Styles for Crossfader */
@@ -353,14 +279,13 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            margin-top: auto; /* Push to bottom */
         }
 
         .crossfader-container input[type="range"] {
             -webkit-appearance: none;
             appearance: none;
             width: 100%;
-            max-width: 250px; /* Limit width */
+            max-width: 250px;
             height: 10px;
             background: #4a5568;
             outline: none;
@@ -391,89 +316,91 @@
 
         /* NUEVOS ESTILOS PARA LA VISUALIZACIÓN DE BEATS */
         .beat-visualization-container {
-            width: 100%; /* Ocupa el ancho completo de la columna de control */
-            max-width: 200px; /* Ancho fijo para la visualización */
-            height: 50px; /* Altura de la barra de visualización */
-            background-color: #2d3748; /* Fondo oscuro */
+            width: 300px;
+            height: 50px;
+            background-color: #2d3748;
             border-radius: 8px;
-            overflow: hidden; /* Importante para que las barras se recorten al moverse */
-            position: absolute; /* Posicionamiento absoluto para que no afecte el layout */
-            top: -10px; /* Ajusta esto para colocarla justo encima del kick visualizer */
-            left: 50%;
-            transform: translateX(-50%);
+            overflow: hidden;
+            position: relative;
             display: flex;
             align-items: center;
             padding: 0;
             box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
             z-index: 5;
-            justify-content: center; /* Centra el contenido horizontalmente */
+            justify-content: center;
+            transition: box-shadow 0.1s ease-out; /* Add transition for smooth glow */
+        }
+
+        .beat-visualization-container.glow-left {
+            box-shadow: 0 0 25px 5px rgba(229, 62, 62, var(--glow-intensity-left, 0)); /* Blue glow for left */
+        }
+
+        .beat-visualization-container.glow-right {
+            box-shadow: 0 0 25px 5px rgba(66, 153, 225, var(--glow-intensity-right, 0)); /* Red glow for right */
         }
 
         .beat-bars-wrapper {
             display: flex;
             height: 100%;
             align-items: center;
-            will-change: transform; /* Optimización para animaciones */
+            will-change: transform;
         }
 
-        /* Estilos base para los tipos de beat (sub-beats) */
         .beat-bar {
             border-radius: 3px;
             opacity: 0.5;
             transition: background-color 0.1s ease-out, opacity 0.1s ease-out, transform 0.1s ease-out, height 0.1s ease-out;
-            flex-shrink: 0; /* Prevenir que las barras se encojan */
+            flex-shrink: 0;
+            margin: 0 1px;
         }
 
-        .beat-bar.beat-type-kick { /* First sub-beat (kick principal) */
-            background-color: #4299e1; /* Azul distintivo */
-            height: 35px; /* Más alto */
+        .beat-bar.beat-type-kick {
+            background-color: #4299e1;
+            height: 35px;
             transform: scale(1.0);
         }
 
         .beat-bar.beat-type-2,
         .beat-bar.beat-type-3,
-        .beat-bar.beat-type-4 { /* Other sub-beats */
-            background-color: #a0aec0; /* Gris por defecto */
-            height: 25px; /* Más corto */
+        .beat-bar.beat-type-4 {
+            background-color: #a0aec0;
+            height: 25px;
             transform: scale(0.7);
         }
 
-        /* Clases de resaltado (active y next) que sobreescriben los estilos base */
         .beat-bar.active-beat {
-            background-color: #e53e3e; /* Rojo más fuerte para el beat activo */
+            background-color: #e53e3e;
             opacity: 1;
-            transform: scale(1.3); /* Un poco más grande */
-            height: 40px; /* Aún más alto cuando está activo */
+            transform: scale(1.3);
+            height: 40px;
         }
 
         .beat-bar.next-beat {
-            background-color: #f6e05e; /* Amarillo */
+            background-color: #f6e05e;
             opacity: 0.9;
             transform: scale(1.1);
-            height: 30px; /* Más alto que inactivo, menos que activo */
+            height: 30px;
         }
 
-        /* Línea central para marcar el beat actual */
         .line-indicator {
             position: absolute;
-            left: 50%; /* Centra la línea */
-            transform: translateX(-50%); /* Ajusta la posición de la línea */
+            left: 50%;
+            transform: translateX(-50%);
             height: 100%;
-            width: 2px; /* Ancho de la línea */
-            background-color: #e53e3e; /* Color rojo brillante */
-            z-index: 10; /* Asegurarse de que esté por encima de las barras */
-            box-shadow: 0 0 5px rgba(229, 62, 62, 0.7); /* Pequeña sombra para resaltarla */
+            width: 2px;
+            background-color: #e53e3e;
+            z-index: 10;
+            box-shadow: 0 0 5px rgba(229, 62, 62, 0.7);
         }
 
         /* Styles for zoom buttons */
         .zoom-buttons {
             display: flex;
             gap: 5px;
-            margin-top: 5px; /* Adjust spacing */
         }
 
         .zoom-button {
-            background-color: #4a5568; /* Gray-700 */
+            background-color: #4a5568;
             color: white;
             padding: 4px 8px;
             border-radius: 4px;
@@ -483,7 +410,7 @@
         }
 
         .zoom-button:hover {
-            background-color: #2d3748; /* Gray-800 */
+            background-color: #2d3748;
         }
     </style>
 
@@ -491,95 +418,100 @@
 <body>
     <div class="phone-frame">
         <div class="notch"></div>
-        <div class="bg-gray-900 text-gray-100 font-inter flex flex-col items-center justify-center w-full h-full">
+
+        <div class="bg-gray-900 text-gray-100 font-inter flex flex-col items-center justify-start w-full h-full">
             <div class="relative w-full p-4 flex items-center justify-between z-10">
                 <button class="text-gray-400 hover:text-white text-2xl font-bold">X</button>
                 <div class="h-4 bg-green-500 rounded-full w-3/4 mx-auto"></div>
             </div>
 
-            <div class="text-center my-4">
-                <h1 class="text-xl font-bold text-blue-400 border border-blue-400 px-4 py-2 rounded-full inline-block">EMPAREJA LOS TRACK</h1>
-            </div>
 
-            <div id="synced-kicks-indicator">¡Kicks Sincronizados!</div>
 
-            <div class="flex justify-around gap-4 px-6 mb-6 w-full">
-                <div class="waveform">
-                    <div id="waveform-progress-1" class="waveform-progress"></div>
-                </div>
-                <div class="waveform red">
-                    <div id="waveform-progress-2" class="waveform-progress"></div>
-                </div>
-            </div>
 
-            <div class="mixer-section">
-                <div id="jog-wheel-1" class="jog-wheel left">
-                    <div class="jog-indicator"></div>
-                </div>
-
-                <div class="faders-buttons-area">
-                    <div class="fader-group">
-                        <div class="control-column">
-                            <div id="beat-visualizer-1" class="beat-visualization-container">
-                                <div class="line-indicator"></div> <!-- Línea central -->
-                                <div id="beat-bars-wrapper-1" class="beat-bars-wrapper"></div> <!-- Wrapper para las barras -->
-                            </div>
-                            <div class="zoom-buttons">
-                                <button id="zoom-out-1" class="zoom-button">-</button>
-                                <button id="zoom-in-1" class="zoom-button">+</button>
-                            </div>
-                            <div id="kick-visualizer-1" class="kick-visualizer-container">
-                                <div id="kick-pulse-1" class="kick-pulse-element"></div>
-                            </div>
-                            <h2 class="text-sm font-semibold text-blue-300">BPM: <span id="bpm-value-1" class="bpm-value">145.0</span></h2>
-                            <button id="sync-1" class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold py-1 px-2 rounded-md shadow-lg transition-all duration-200 mb-2">
-                                SYNC
-                            </button>
-                            <input type="range" id="bpm-slider-1" class="vertical-fader">
-                        </div>
-
-                        <div class="control-column">
-                            <div id="beat-visualizer-2" class="beat-visualization-container">
-                                <div class="line-indicator"></div> <!-- Línea central -->
-                                <div id="beat-bars-wrapper-2" class="beat-bars-wrapper"></div> <!-- Wrapper para las barras -->
-                            </div>
-                            <div class="zoom-buttons">
-                                <button id="zoom-out-2" class="zoom-button">-</button>
-                                <button id="zoom-in-2" class="zoom-button">+</button>
-                            </div>
-                            <div id="kick-visualizer-2" class="kick-visualizer-container">
-                                <div id="kick-pulse-2" class="kick-pulse-element"></div>
-                            </div>
-                            <h2 class="text-sm font-semibold text-blue-300">BPM: <span id="bpm-value-2" class="bpm-value">130.0</span></h2>
-                            <button id="sync-2" class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold py-1 px-2 rounded-md shadow-lg transition-all duration-200 mb-2">
-                                SYNC
-                            </button>
-                            <input type="range" id="bpm-slider-2" class="vertical-fader">
-                        </div>
-                    </div>
-
-                    <div class="play-cue-buttons">
-                        <button id="cue-1" class="cue-button">CUE L</button> <button id="cue-2" class="cue-button">CUE R</button> </div>
-                    <div class="play-cue-buttons mt-2">
-                        <button id="play-pause-1" class="play-button">▶️ PLAY A</button>
-                        <button id="play-pause-2" class="play-button">▶️ PLAY B</button>
-                    </div>
-                </div>
-
-                <div id="jog-wheel-2" class="jog-wheel right">
-                    <div class="jog-indicator"></div>
-                </div>
-
-                <div class="crossfader-container">
-                    <label for="crossfader" class="sr-only">Crossfader</label>
-                    <input type="range" id="crossfader" min="0" max="1" value="0.5" step="0.01">
-                </div>
-            </div>
-
-            <button id="debug-play-all" class="absolute bottom-8 left-1/2 -translate-x-1/2 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-full shadow-lg z-50">
-                ▶️▶️ Play All
-            </button>
         </div>
+
+        <div id="synced-kicks-indicator" class="absolute" style="top: 100px; left: 50%; transform: translateX(-50%);">¡Kicks Sincronizados!</div>
+
+        <div id="jog-wheel-1" class="jog-wheel absolute" style="top: 350px; left: -70px;">
+            <svg class="jog-trace-svg" viewBox="0 0 200 200">
+                <defs>
+                    <linearGradient id="gradientTrace" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:rgba(255,255,255,0.0)" />
+                        <stop offset="30%" style="stop-color:rgba(255,255,255,0.7)" />
+                        <stop offset="70%" style="stop-color:rgba(255,255,255,0.7)" />
+                        <stop offset="100%" style="stop-color:rgba(255,255,255,0.0)" />
+                    </linearGradient>
+                </defs>
+                <circle id="jog-trace-circle-1" cx="100" cy="100" r="90" fill="none" stroke="url(#gradientTrace)" stroke-width="10" stroke-linecap="round"></circle>
+            </svg>
+        </div>
+        <div id="jog-wheel-2" class="jog-wheel absolute" style="top: 350px; right: -70px;">
+            <svg class="jog-trace-svg" viewBox="0 0 200 200">
+                <defs>
+                    <linearGradient id="gradientTrace" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:rgba(255,255,255,0.0)" />
+                        <stop offset="30%" style="stop-color:rgba(255,255,255,0.7)" />
+                        <stop offset="70%" style="stop-color:rgba(255,255,255,0.7)" />
+                        <stop offset="100%" style="stop-color:rgba(255,255,255,0.0)" />
+                    </linearGradient>
+                </defs>
+                <circle id="jog-trace-circle-2" cx="100" cy="100" r="90" fill="none" stroke="url(#gradientTrace)" stroke-width="10" stroke-linecap="round"></circle>
+            </svg>
+        </div>
+
+        <div id="beat-visualizer-1" class="beat-visualization-container absolute" style="top: 180px; left: 35px;">
+            <div class="line-indicator"></div>
+            <div id="beat-bars-wrapper-1" class="beat-bars-wrapper"></div>
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-r-md z-20">C1</div>
+        </div>
+        <div class="zoom-buttons absolute" style="top: 130px; left: 35px;">
+            <button id="zoom-out-1" class="zoom-button">-</button>
+            <button id="zoom-in-1" class="zoom-button">+</button>
+        </div>
+       
+        <h2 class="text-sm font-semibold text-blue-300 bpm-label-abs absolute" style="top: 80px; left: 45px;">BPM: <span id="bpm-value-1" class="bpm-value">145.0</span></h2>
+        <button id="sync-1" class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold py-1 px-2 rounded-md shadow-lg transition-all duration-200 absolute" style="top: 480px; left: 55px;">
+            SYNC
+        </button>
+        <input type="range" id="bpm-slider-1" class="vertical-fader absolute" style="top: 440px; left: 80px; transform: rotate(-90deg);">
+
+
+        <div id="beat-visualizer-2" class="beat-visualization-container absolute" style="top: 250px; left: 35px;">
+            <div class="line-indicator"></div>
+            <div id="beat-bars-wrapper-2" class="beat-bars-wrapper"></div>
+            <div class="absolute right-0 top-1/2 -translate-y-1/2 bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-l-md z-20">C2</div>
+        </div>
+        <div class="zoom-buttons absolute" style="top: 130px; right: 35px;">
+            <button id="zoom-out-2" class="zoom-button">-</button>
+            <button id="zoom-in-2" class="zoom-button">+</button>
+        </div>
+
+        <h2 class="text-sm font-semibold text-blue-300 bpm-label-abs absolute" style="top: 80px; right: 45px;">BPM: <span id="bpm-value-2" class="bpm-value">130.0</span></h2>
+        <button id="sync-2" class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold py-1 px-2 rounded-md shadow-lg transition-all duration-200 absolute" style="top: 480px; right: 55px;">
+            SYNC
+        </button>
+        <input type="range" id="bpm-slider-2" class="vertical-fader absolute" style="top: 440px; right: 80px; transform: rotate(-90deg);">
+
+
+        <div class="play-cue-buttons-abs absolute" style="bottom: 95px; left: 50%; transform: translateX(-50%); display: flex; gap: 180px;">
+            <button id="cue-1" class="cue-button">CUE L</button>
+            <button id="cue-2" class="cue-button">CUE R</button>
+        </div>
+
+        <div class="play-cue-buttons-abs absolute" style="bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 180px;">
+            <button id="play-pause-1" class="play-button">▶️ PLAY A</button>
+            <button id="play-pause-2" class="play-button">▶️ PLAY B</button>
+        </div>
+
+        <div class="crossfader-container absolute" style="bottom: 60px; left: 0; right: 0; width: 100%; max-width: 180px; margin: 0 auto;">
+            <label for="crossfader" class="sr-only">Crossfader</label>
+            <input type="range" id="crossfader" min="0" max="1" value="0.5" step="0.01">
+        </div>
+
+        <button id="debug-play-all" class="absolute" style="bottom: 0px; left: 50%; transform: translateX(-50%);">
+            ▶️▶️ Play All
+        </button>
+
     </div>
 
     <audio id="audio1" src="https://raw.githubusercontent.com/DjLess/MP3_repo/main/SCREECHMASTER.mp3" preload="auto"></audio>
@@ -611,19 +543,20 @@
         const sync1 = document.getElementById('sync-1');
         const sync2 = document.getElementById('sync-2');
 
-        // Get references to waveform progress
-        const waveformProgress1 = document.getElementById('waveform-progress-1');
-        const waveformProgress2 = document.getElementById('waveform-progress-2');
-
         // Get references to jog wheels
         const jogWheel1 = document.getElementById('jog-wheel-1');
         const jogWheel2 = document.getElementById('jog-wheel-2');
 
-        // Get references to kick visualizers and their pulse elements
-        const kickVisualizer1 = document.getElementById('kick-visualizer-1');
-        const kickVisualizer2 = document.getElementById('kick-visualizer-2');
-        const kickPulse1 = document.getElementById('kick-pulse-1');
-        const kickPulse2 = document.getElementById('kick-pulse-2');
+        // Get references to the beat visualizer containers and their inner wrappers
+        const beatVisualizer1 = document.getElementById('beat-visualizer-1');
+        const beatVisualizer2 = document.getElementById('beat-visualizer-2');
+        const beatBarsWrapper1 = document.getElementById('beat-bars-wrapper-1');
+        const beatBarsWrapper2 = document.getElementById('beat-bars-wrapper-2');
+
+        // Remapping for the old kick pulse logic (targeting the main visualizer div for the 'active' class)
+        // IMPORTANT: These must be defined AFTER beatVisualizer1/2
+        const kickPulse1 = beatVisualizer1;
+        const kickPulse2 = beatVisualizer2;
 
         // Get reference to the synced kicks indicator
         const syncedKicksIndicator = document.getElementById('synced-kicks-indicator');
@@ -631,17 +564,15 @@
         // Get reference to the crossfader
         const crossfader = document.getElementById('crossfader');
 
-        // NEW REFERENCES FOR BEAT VISUALIZATION
-        const beatVisualizer1 = document.getElementById('beat-visualizer-1');
-        const beatVisualizer2 = document.getElementById('beat-visualizer-2');
-        const beatBarsWrapper1 = document.getElementById('beat-bars-wrapper-1');
-        const beatBarsWrapper2 = document.getElementById('beat-bars-wrapper-2');
-
-        // NEW REFERENCES FOR ZOOM BUTTONS (updated IDs)
+        // NEW REFERENCES FOR ZOOM BUTTONS
         const zoomIn1 = document.getElementById('zoom-in-1');
         const zoomOut1 = document.getElementById('zoom-out-1');
         const zoomIn2 = document.getElementById('zoom-in-2');
         const zoomOut2 = document.getElementById('zoom-out-2');
+
+        // Get references to the new SVG circle elements for the trace
+        const jogTraceCircle1 = document.getElementById('jog-trace-circle-1');
+        const jogTraceCircle2 = document.getElementById('jog-trace-circle-2');
 
 
         // Variables to store kick intervals
@@ -657,8 +588,8 @@
         let beatHighlightTimeouts2 = [];
 
         // Variables for continuous animation control
-        let animationFrameId1 = null;
-        let animationFrameId2 = null;
+        let animationFrameId1 = null; // for beat visualizer
+        let animationFrameId2 = null; // for beat visualizer
 
         // Beat visualization configuration
         const SUB_BEATS_PER_MAIN_BEAT = 4; // Each main beat is divided into 4 sub-beats (e.g., 16th notes)
@@ -666,7 +597,7 @@
         // Zoom levels for beat visualization (number of main beats displayed)
         const ZOOM_LEVELS = [4, 8, 16, 32];
         let currentNumMainBeatsDisplayed1 = 8; // Initial display for track 1
-        let currentNumMainBeatsDisplayed2 = 8; // Initial display for track 2
+        let currentNumMainMainBeatsDisplayed2 = 8; // Initial display for track 2
 
         // Constant for the total number of sub-beats to generate for continuous scrolling
         const TOTAL_GENERATED_SUB_BEATS = 64 * SUB_BEATS_PER_MAIN_BEAT; // Generate enough for 64 main beats (256 sub-beats)
@@ -772,697 +703,650 @@
         }
 
         /**
-         * Clears all pending timeouts for beat highlighting.
+         * Clears all pending timeouts for beat highlighting for a given track.
          * @param {Array<number>} timeoutsArray - The array of timeout IDs.
          */
-        function clearBeatTimeouts(timeoutsArray) {
+        function clearBeatHighlightTimeouts(timeoutsArray) {
             timeoutsArray.forEach(timeoutId => clearTimeout(timeoutId));
             timeoutsArray.length = 0; // Clear the array
         }
 
         /**
-         * Creates and appends sub-beat bars to the wrapper, dynamically sizing them
-         * to fit the desired number of main beats within the container's width,
-         * and adjusting density based on BPM.
-         * @param {HTMLElement} beatBarsWrapper - The wrapper element for the beat bars.
-         * @param {number} numMainBeatsToDisplay - The number of main beats to display in the visible window (zoom level).
-         * @param {number} containerWidth - The width of the beat visualizer container (visible area).
-         * @param {number} currentBPM - The current BPM of the track.
+         * Generates and appends beat bars to the specified wrapper.
+         * @param {HTMLElement} wrapper - The beat bars wrapper element.
+         * @param {number} numMainBeats - The number of main beats to generate.
+         * @param {number} subBeatsPerMainBeat - The number of sub-beats per main beat.
+         * @param {number} wrapperWidth - The width of the beat visualizer container.
          */
-        function createBeatBars(beatBarsWrapper, numMainBeatsToDisplay, containerWidth, currentBPM) {
-            beatBarsWrapper.innerHTML = ''; // Clear existing bars
+        function generateBeatBars(wrapper, numMainBeats, subBeatsPerMainBeat, wrapperWidth) {
+            wrapper.innerHTML = ''; // Clear existing bars
+            const totalSubBeats = TOTAL_GENERATED_SUB_BEATS; // Generate a fixed large number of bars
 
-            const numSubBeatsInVisibleWindow = numMainBeatsToDisplay * SUB_BEATS_PER_MAIN_BEAT;
+            // Calculate optimal bar width and gap based on the wrapper width and number of beats to display
+            const effectiveWidth = wrapperWidth - (MIN_GAP_VISUAL * (totalSubBeats - 1));
+            let barWidth = Math.max(MIN_BAR_WIDTH_VISUAL, effectiveWidth / totalSubBeats);
+            let gap = MIN_GAP_VISUAL;
 
-            // Calculate a BPM-dependent scaling factor for visual density
-            const bpmDensityScale = REFERENCE_BPM_FOR_VISUAL_DENSITY / currentBPM;
-
-            // Define base units for bar width and gaps (these are relative to each other)
-            const BASE_BAR_UNIT = 1;
-            const BASE_INTERNAL_GAP_UNIT = 0.2;
-            const BASE_GROUP_GAP_UNIT = 0.8;
-
-            // Calculate total "relative units" for the visible window based on desired ratios
-            let totalRelativeUnitsForVisibleWindow = 0;
-            for (let i = 0; i < numSubBeatsInVisibleWindow; i++) {
-                totalRelativeUnitsForVisibleWindow += BASE_BAR_UNIT;
-                const subBeatIndexInMainBeat = i % SUB_BEATS_PER_MAIN_BEAT;
-                if (subBeatIndexInMainBeat === SUB_BEATS_PER_MAIN_BEAT - 1 && i !== numSubBeatsInVisibleWindow - 1) {
-                    totalRelativeUnitsForVisibleWindow += BASE_GROUP_GAP_UNIT;
-                } else if (i !== numSubBeatsInVisibleWindow - 1) {
-                    totalRelativeUnitsForVisibleWindow += BASE_INTERNAL_GAP_UNIT;
-                }
+            // Adjust barWidth if it becomes too large, potentially reducing gap if needed, or capping barWidth
+            if (barWidth > (wrapperWidth / (totalSubBeats / 2))) { // Heuristic to prevent excessively wide bars
+                barWidth = (wrapperWidth / (totalSubBeats / 2));
+                gap = (wrapperWidth - (barWidth * totalSubBeats)) / (totalSubBeats - 1);
             }
 
-            // Calculate the actual pixel size of one 'base unit' for the visible window
-            let pixelUnitSize = 0;
-            if (totalRelativeUnitsForVisibleWindow > 0) {
-                pixelUnitSize = containerWidth / totalRelativeUnitsForVisibleWindow;
-            }
-
-            // Apply BPM scaling to the pixel unit size
-            pixelUnitSize *= bpmDensityScale;
-
-            let calculatedBarWidth = Math.max(MIN_BAR_WIDTH_VISUAL, BASE_BAR_UNIT * pixelUnitSize);
-            let actualInternalSubBeatGap = Math.max(MIN_GAP_VISUAL, BASE_INTERNAL_GAP_UNIT * pixelUnitSize);
-            let actualMainBeatGroupGap = Math.max(MIN_GAP_VISUAL, BASE_GROUP_GAP_UNIT * pixelUnitSize);
-
-            // Now, create all TOTAL_GENERATED_SUB_BEATS bars with these calculated sizes
-            let totalContentWidth = 0;
-            for (let i = 0; i < TOTAL_GENERATED_SUB_BEATS; i++) {
+            for (let i = 0; i < totalSubBeats; i++) {
                 const beatBar = document.createElement('div');
                 beatBar.classList.add('beat-bar');
-                beatBar.style.width = `${calculatedBarWidth}px`;
-
-                const subBeatIndexInMainBeat = i % SUB_BEATS_PER_MAIN_BEAT;
-
-                if (subBeatIndexInMainBeat === 0) {
-                    beatBar.classList.add('beat-type-kick');
+                // Determine beat type
+                if (i % subBeatsPerMainBeat === 0) {
+                    beatBar.classList.add('beat-type-kick'); // Main beat (kick)
+                } else if (i % (subBeatsPerMainBeat / 2) === 0) {
+                    beatBar.classList.add('beat-type-2'); // Half-beat
                 } else {
-                    beatBar.classList.add(`beat-type-${subBeatIndexInMainBeat + 1}`);
+                    beatBar.classList.add('beat-type-4'); // Quarter-beat
                 }
 
-                let currentMargin = 0;
-                if (i !== TOTAL_GENERATED_SUB_BEATS - 1) { // Apply margin only if it's not the very last bar
-                    if (subBeatIndexInMainBeat === SUB_BEATS_PER_MAIN_BEAT - 1) {
-                        currentMargin = actualMainBeatGroupGap;
-                    } else {
-                        currentMargin = actualInternalSubBeatGap;
+                beatBar.style.width = `${barWidth}px`;
+                beatBar.style.marginRight = `${gap}px`; // Apply gap as right margin
+
+                wrapper.appendChild(beatBar);
+            }
+        }
+
+        /**
+         * Updates the visual position and highlighting of beat bars.
+         * @param {HTMLAudioElement} audio - The audio element.
+         * @param {HTMLElement} beatBarsWrapper - The wrapper containing the beat bars.
+         * @param {Array<number>} timeoutsArray - Array to store timeout IDs.
+         * @param {number} currentNumMainBeatsDisplayed - Number of main beats currently displayed.
+         */
+        function updateBeatVisualization(audio, beatBarsWrapper, timeoutsArray, currentNumMainBeatsDisplayed) {
+            clearBeatHighlightTimeouts(timeoutsArray); // Clear previous timeouts
+
+            const msPerBeat = (60 / parseFloat(audio.playbackRate * getBPMFromAudio(audio))) * 1000;
+            const msPerSubBeat = msPerBeat / SUB_BEATS_PER_MAIN_BEAT;
+
+            const beatVisualizerWidth = beatBarsWrapper.parentElement.offsetWidth;
+            const totalSubBeats = beatBarsWrapper.children.length; // Use the actual number of generated bars
+
+            // Calculate total width of all bars and gaps
+            let totalBarsWidth = 0;
+            for (let i = 0; i < totalSubBeats; i++) {
+                const bar = beatBarsWrapper.children[i];
+                totalBarsWidth += parseFloat(bar.style.width);
+                if (i < totalSubBeats - 1) { // Add gap for all but the last bar
+                    totalBarsWidth += parseFloat(bar.style.marginRight);
+                }
+            }
+
+            // Calculate the width of one sub-beat visually
+            const subBeatVisualWidth = totalBarsWidth / totalSubBeats;
+
+            // Calculate how many sub-beats are visible in the wrapper
+            const visibleSubBeats = beatVisualizerWidth / subBeatVisualWidth;
+
+            // Calculate the scroll speed (pixels per millisecond)
+            const scrollSpeedPxPerMs = (beatVisualizerWidth / (currentNumMainBeatsDisplayed * msPerBeat)) * SUB_BEATS_PER_MAIN_BEAT;
+
+            let lastTime = 0;
+
+            // Determine which state object to use based on the audio element
+            const jogState = (audio === audio1) ? jogWheelState1 : jogWheelState2;
+
+            function animateBeatBars(currentTime) {
+                if (!audio.paused) {
+                    if (!lastTime) lastTime = currentTime;
+                    const elapsed = currentTime - lastTime;
+                    lastTime = currentTime;
+
+                    // Calculate the position based on audio's current time
+                    const currentAudioTime = audio.currentTime * 1000; // in milliseconds
+                    const totalMsDisplayed = (currentNumMainBeatsDisplayed * msPerBeat);
+
+                    // Calculate the offset to center the "current beat" at the line indicator
+                    // The line indicator is at 50% of the visualizer width.
+                    const centerOffsetPx = beatVisualizerWidth / 2;
+
+                    // The actual pixel position for the current audio time, scaled by the visualization speed.
+                    const currentPixelPosition = (currentAudioTime % totalMsDisplayed) * (beatVisualizerWidth / totalMsDisplayed);
+
+                    // To keep the current beat at the center, we need to shift the wrapper
+                    // by an amount that brings the current beat's visual position to the centerOffsetPx.
+                    const wrapperOffset = centerOffsetPx - currentPixelPosition;
+
+                    // Apply the transform to the wrapper
+                    beatBarsWrapper.style.transform = `translateX(${wrapperOffset}px)`;
+
+                    // Determine the active and next beats based on audio time
+                    const currentSubBeatIndex = Math.floor(currentAudioTime / msPerSubBeat);
+
+                    // Remove all active/next classes first for proper re-highlighting
+                    Array.from(beatBarsWrapper.children).forEach(bar => {
+                        bar.classList.remove('active-beat', 'next-beat');
+                    });
+
+                    // Highlight the current and next beat
+                    const activeBar = beatBarsWrapper.children[currentSubBeatIndex % totalSubBeats];
+                    const nextBar = beatBarsWrapper.children[(currentSubBeatIndex + 1) % totalSubBeats];
+
+                    if (activeBar) {
+                        activeBar.classList.add('active-beat');
                     }
+                    if (nextBar) {
+                        nextBar.classList.add('next-beat');
+                    }
+                } else {
+                    lastTime = 0; // Reset timer when paused
                 }
-                beatBar.style.marginRight = `${currentMargin}px`;
-                totalContentWidth += calculatedBarWidth + currentMargin;
-
-                beatBarsWrapper.appendChild(beatBar);
+                jogState.animationFrameId = requestAnimationFrame(animateBeatBars); // Store ID in jogState
             }
-            beatBarsWrapper.style.width = `${totalContentWidth}px`;
+
+            // Cancel any existing animation frame for this track before starting a new one
+            if (jogState.animationFrameId) {
+                cancelAnimationFrame(jogState.animationFrameId);
+            }
+            jogState.animationFrameId = requestAnimationFrame(animateBeatBars); // Start new animation
         }
 
-        /**
-         * Updates both beat visualization and waveform progress for a single track.
-         * This function is designed to be called repeatedly by requestAnimationFrame.
-         * @param {HTMLAudioElement} audio - The audio element.
-         * @param {HTMLElement} beatVisualizerContainer - The main beat visualization container.
-         * @param {HTMLElement} beatBarsWrapper - The inner wrapper containing beat bars.
-         * @param {HTMLElement} waveformProgressBar - The waveform progress element.
-         * @param {number} actualBPM - Current actual BPM of the track (for audio sync and highlighting).
-         * @param {number} trackNumber - The track number (1 or 2).
-         * @param {number} numMainBeatsToDisplay - The number of main beats currently displayed.
-         */
-        function updateBeatAndWaveformVisualizations(audio, beatVisualizerContainer, beatBarsWrapper, waveformProgressBar, actualBPM, trackNumber, numMainBeatsToDisplay) {
-            const totalSubBeatBarsInWrapper = TOTAL_GENERATED_SUB_BEATS;
+        // Helper to get BPM from audio (assuming you have a way to detect/set it)
+        function getBPMFromAudio(audio) {
+            // In a real app, you'd get this from audio analysis or metadata.
+            // For this mockup, we'll use the value from the BPM slider.
+            if (audio.id === 'audio1') {
+                return parseFloat(bpmValue1.textContent);
+            } else if (audio.id === 'audio2') {
+                return parseFloat(bpmValue2.textContent);
+            }
+            return 120; // Default BPM if not found
+        }
 
-            if (audio.paused) {
-                Array.from(beatBarsWrapper.children).forEach(bar => {
-                    bar.classList.remove('active-beat', 'next-beat');
-                });
-                const containerWidth = beatVisualizerContainer.offsetWidth;
-                const firstBar = beatBarsWrapper.children[0];
-                if (firstBar) {
-                    const computedStyle = getComputedStyle(firstBar);
-                    const barWidthWithMargin = parseFloat(computedStyle.width) + parseFloat(computedStyle.marginRight);
-                    beatBarsWrapper.style.transform = `translateX(${containerWidth / 2 - barWidthWithMargin / 2}px)`;
-                }
+        // Add new variables for jog wheel state
+        let jogWheelState1 = {
+            isDragging: false,
+            startAngle: 0,
+            startMouseX: 0,
+            startMouseY: 0,
+            currentRotation: 0,
+            lastAngle: 0,
+            nudgeTimeout: null,
+            audioElement: audio1,
+            bpmValueElement: bpmValue1,
+            beatBarsWrapper: beatBarsWrapper1,
+            timeoutsArray: beatHighlightTimeouts1,
+            animationFrameId: null, // For beat visualizer
+            animationFrameRotationId: null, // NEW: For jog wheel continuous rotation
+            lastRotationTime: 0, // NEW: For continuous rotation calculation
+            currentNumMainBeatsDisplayed: currentNumMainBeatsDisplayed1
+        };
+
+        let jogWheelState2 = {
+            isDragging: false,
+            startAngle: 0,
+            startMouseX: 0,
+            startMouseY: 0,
+            currentRotation: 0,
+            lastAngle: 0,
+            nudgeTimeout: null,
+            audioElement: audio2,
+            bpmValueElement: bpmValue2,
+            beatBarsWrapper: beatBarsWrapper2,
+            timeoutsArray: beatHighlightTimeouts2,
+            animationFrameId: null, // For beat visualizer
+            animationFrameRotationId: null, // NEW: For jog wheel continuous rotation
+            lastRotationTime: 0, // NEW: For continuous rotation calculation
+            currentNumMainBeatsDisplayed: currentNumMainMainBeatsDisplayed2
+        };
+
+        // NEW: Function to update jog wheel rotation based on audio playback
+        function updateJogWheelRotation(jogWheelElement, jogState, timestamp) {
+            if (jogState.isDragging || jogState.audioElement.paused) {
+                jogState.lastRotationTime = timestamp; // Reset last time when paused or dragging
+                jogState.animationFrameRotationId = requestAnimationFrame((ts) => updateJogWheelRotation(jogWheelElement, jogState, ts));
                 return;
             }
 
-            // --- Waveform Progress Update ---
-            if (audio.duration > 0) {
-                const progress = (audio.currentTime / audio.duration) * 100;
-                waveformProgressBar.style.width = `${progress}%`;
+            if (!jogState.lastRotationTime) {
+                jogState.lastRotationTime = timestamp;
             }
 
-            // --- Beat Visualization Update ---
-            // Use REFERENCE_BPM_FOR_VISUAL_DENSITY for consistent visual scroll speed
-            const msPerMainBeatForVisualScroll = (60 / REFERENCE_BPM_FOR_VISUAL_DENSITY) * 1000;
-            const msPerSubBeatForVisualScroll = msPerMainBeatForVisualScroll / SUB_BEATS_PER_MAIN_BEAT;
+            const elapsed = timestamp - jogState.lastRotationTime;
+            const bpm = parseFloat(jogState.bpmValueElement.textContent);
+            const playbackRate = jogState.audioElement.playbackRate;
 
-            const beatBars = Array.from(beatBarsWrapper.children);
-            const containerWidth = beatVisualizerContainer.offsetWidth;
-            const firstBar = beatBars[0];
-            let barWidthWithMargin = 0;
-            if (firstBar) {
-                const computedStyle = getComputedStyle(firstBar);
-                barWidthWithMargin = parseFloat(computedStyle.width) + parseFloat(computedStyle.marginRight);
-            } else {
-                barWidthWithMargin = 15 + 2; // Fallback
-            }
+            // Calculate degrees per millisecond for a slower rotation (e.g., 1 revolution every 4 beats)
+            const beatsPerRevolution = 4; // Number of main beats for one full jog wheel revolution
+            const msPerRevolution = ((60 / bpm) * 1000) * beatsPerRevolution;
+            const degreesPerMs = (360 / msPerRevolution) * playbackRate;
 
-            const totalMsPlayed = audio.currentTime * 1000;
+            const rotationAmount = degreesPerMs * elapsed;
+            jogState.currentRotation += rotationAmount;
 
-            // Calculate visual scroll index based on REFERENCE_BPM_FOR_VISUAL_DENSITY
-            const visualScrollSubBeatIndexFloat = totalMsPlayed / msPerSubBeatForVisualScroll;
-            const visualScrollSubBeatIndex = Math.floor(visualScrollSubBeatIndexFloat);
-            const visualProgressInSubBeat = visualScrollSubBeatIndexFloat - visualScrollSubBeatIndex;
+            // Keep rotation within a reasonable range to prevent massive numbers
+            jogState.currentRotation %= 360;
 
-            // Calculate actual beat index for highlighting based on actualBPM
-            const msPerMainBeatActual = (60 / actualBPM) * 1000;
-            const msPerSubBeatActual = msPerMainBeatActual / SUB_BEATS_PER_MAIN_BEAT;
-            const actualSubBeatIndexFloat = totalMsPlayed / msPerSubBeatActual;
-            const actualSubBeatIndex = Math.floor(actualSubBeatIndexFloat);
+            jogWheelElement.style.transform = `rotate(${jogState.currentRotation}deg)`;
+            jogState.lastRotationTime = timestamp;
 
-
-            // Clear previous highlights
-            beatBars.forEach(bar => {
-                bar.classList.remove('active-beat', 'next-beat');
-            });
-
-            // Highlight current and next sub-beat bar, wrapping around the TOTAL_GENERATED_SUB_BEATS
-            // Use actual beat index for highlighting
-            const activeBarDOMIndex = actualSubBeatIndex % totalSubBeatBarsInWrapper;
-            if (beatBars[activeBarDOMIndex]) {
-                beatBars[activeBarDOMIndex].classList.add('active-beat');
-            }
-            const nextBarDOMIndex = (actualSubBeatIndex + 1) % totalSubBeatBarsInWrapper;
-            if (beatBars[nextBarDOMIndex]) {
-                beatBars[nextBarDOMIndex].classList.add('next-beat');
-            }
-
-            // Calculate wrapper transform for continuous scrolling
-            const centerOfContainer = containerWidth / 2;
-            // Use the visual scroll index for positioning the wrapper
-            const visualBarCenterPos = visualScrollSubBeatIndex * barWidthWithMargin + (barWidthWithMargin / 2);
-            const visualDynamicOffset = visualProgressInSubBeat * barWidthWithMargin;
-            let wrapperTransformX = centerOfContainer - (visualBarCenterPos + visualDynamicOffset);
-
-            beatBarsWrapper.style.transform = `translateX(${wrapperTransformX}px)`;
-
-            // Request next frame
-            if (trackNumber === 1) {
-                animationFrameId1 = requestAnimationFrame(() =>
-                    updateBeatAndWaveformVisualizations(audio, beatVisualizerContainer, beatBarsWrapper, waveformProgressBar, actualBPM, trackNumber, currentNumMainBeatsDisplayed1)
-                );
-            } else {
-                animationFrameId2 = requestAnimationFrame(() =>
-                    updateBeatAndWaveformVisualizations(audio, beatVisualizerContainer, beatBarsWrapper, waveformProgressBar, actualBPM, trackNumber, currentNumMainBeatsDisplayed2)
-                );
-            }
-        }
-
-        /**
-         * Toggles play/pause for an audio track and manages the kick visualizer and beat visualization.
-         * @param {HTMLAudioElement} audio - The audio element.
-         * @param {HTMLButtonElement} button - The play/pause button.
-         * @param {HTMLElement} pulseElement - The visual pulse element.
-         * @param {HTMLElement} bpmValueElement - The element displaying the BPM value.
-         * @param {HTMLElement} beatVisualizerContainer - The main beat visualization container.
-         * @param {HTMLElement} beatBarsWrapper - The inner container of beat bars.
-         * @param {HTMLElement} waveformProgressBar - The waveform progress element.
-         * @param {number} trackNumber - The track number (1 or 2).
-         */
-        function togglePlayPause(audio, button, pulseElement, bpmValueElement, beatVisualizerContainer, beatBarsWrapper, waveformProgressBar, trackNumber) {
-            if (audio.paused) {
-                audio.play();
-                if (button.id === 'play-pause-1') {
-                    button.textContent = '⏸️ PLAY A';
-                } else {
-                    button.textContent = '⏸️ PLAY B';
-                }
-
-                const currentBPM = parseFloat(bpmValueElement.textContent);
-                startKickAnimationInterval(audio, pulseElement, `kickInterval${trackNumber}`, currentBPM);
-                // Start the combined beat and waveform visualization loop
-                const numBeatsToDisplay = trackNumber === 1 ? currentNumMainBeatsDisplayed1 : currentNumMainBeatsDisplayed2;
-                updateBeatAndWaveformVisualizations(audio, beatVisualizerContainer, beatBarsWrapper, waveformProgressBar, currentBPM, trackNumber, numBeatsToDisplay);
-
-            } else {
-                audio.pause();
-                if (button.id === 'play-pause-1') {
-                    button.textContent = '▶️ PLAY A';
-                } else {
-                    button.textContent = '▶️ PLAY B';
-                }
-                if (trackNumber === 1) {
-                    if (kickInterval1) clearInterval(kickInterval1);
-                    kickInterval1 = null;
-                    if (animationFrameId1) cancelAnimationFrame(animationFrameId1);
-                    animationFrameId1 = null;
-                } else {
-                    if (kickInterval2) clearInterval(kickInterval2);
-                    kickInterval2 = null;
-                    if (animationFrameId2) cancelAnimationFrame(animationFrameId2);
-                    animationFrameId2 = null;
-                }
-                // When paused, ensure beat bars are cleared of highlights
-                Array.from(beatBarsWrapper.children).forEach(bar => {
-                    bar.classList.remove('active-beat', 'next-beat');
-                });
-            }
-        }
-
-        /**
-         * Sets the CUE point for an audio track.
-         * @param {HTMLAudioElement} audio - The audio element.
-         * @param {number} trackNumber - The track number (1 or 2).
-         */
-        function setCuePoint(audio, trackNumber) {
-            if (trackNumber === 1) {
-                cuePoint1 = audio.currentTime;
-                console.log(`CUE A set at: ${cuePoint1.toFixed(2)}s`);
-            } else {
-                cuePoint2 = audio.currentTime;
-                console.log(`CUE B set at: ${cuePoint2.toFixed(2)}s`);
-            }
-        }
-
-        /**
-         * Jumps to the CUE point and plays the audio.
-         * @param {HTMLAudioElement} audio - The audio element.
-         * @param {number} cuePoint - The stored CUE point.
-         * @param {HTMLButtonElement} playButton - The play/pause button for the track.
-         * @param {HTMLElement} pulseElement - The visual pulse element.
-         * @param {HTMLElement} bpmValueElement - The element displaying the BPM value.
-         * @param {HTMLElement} beatVisualizerContainer - The main beat visualization container.
-         * @param {HTMLElement} beatBarsWrapper - The inner container of beat bars.
-         * @param {HTMLElement} waveformProgressBar - The waveform progress element.
-         * @param {number} trackNumber - The track number (1 or 2).
-         */
-        function jumpToCueAndPlay(audio, cuePoint, playButton, pulseElement, bpmValueElement, beatVisualizerContainer, beatBarsWrapper, waveformProgressBar, trackNumber) {
-            audio.currentTime = cuePoint;
-            if (audio.paused) { // Only play if currently paused
-                togglePlayPause(audio, playButton, pulseElement, bpmValueElement, beatVisualizerContainer, beatBarsWrapper, waveformProgressBar, trackNumber);
-            }
-            // If already playing, just jump to CUE point
-        }
-
-        /**
-         * Syncs the BPM of one track to another.
-         * @param {HTMLAudioElement} sourceAudio - The audio element to sync from.
-         * @param {HTMLAudioElement} targetAudio - The audio element to sync to.
-         * @param {HTMLInputElement} targetBpmSlider - The BPM slider of the target track.
-         * @param {HTMLElement} targetBpmValueElement - The BPM value display of the target track.
-         * @param {HTMLElement} targetBeatVisualizerContainer - The beat visualizer container of the target track.
-         * @param {HTMLElement} targetBeatBarsWrapper - The beat bars wrapper of the target track.
-         * @param {HTMLElement} targetWaveformProgressBar - The waveform progress bar of the target track.
-         * @param {number} targetTrackNumber - The track number of the target track.
-         * @param {number} initialTargetBaseBPM - The initial base BPM of the target track.
-         */
-        function syncBPM(sourceAudio, targetAudio, targetBpmSlider, targetBpmValueElement, targetBeatVisualizerContainer, targetBeatBarsWrapper, targetWaveformProgressBar, targetTrackNumber, initialTargetBaseBPM) {
-            if (sourceAudio.paused) {
-                console.log("Source audio is paused, cannot sync BPM.");
-                return;
-            }
-
-            const sourceBPM = parseFloat(sourceAudio.playbackRate * (targetTrackNumber === 1 ? initialBaseBPM2 : initialBaseBPM1)); // Get actual BPM from source
-            const newTargetPlaybackRate = sourceBPM / initialTargetBaseBPM;
-
-            targetAudio.playbackRate = newTargetPlaybackRate;
-            targetBpmSlider.value = sourceBPM.toFixed(1);
-            targetBpmValueElement.textContent = sourceBPM.toFixed(1);
-
-            // Re-start beat visualization for the synced track to update bar spacing and animation
-            const numBeatsToDisplay = targetTrackNumber === 1 ? currentNumMainBeatsDisplayed1 : currentNumMainBeatsDisplayed2;
-            const containerWidth = targetBeatVisualizerContainer.offsetWidth;
-            if (!targetAudio.paused) {
-                if (trackNumber === 1 && animationFrameId1) cancelAnimationFrame(animationFrameId1);
-                if (trackNumber === 2 && animationFrameId2) cancelAnimationFrame(animationFrameId2);
-                createBeatBars(targetBeatBarsWrapper, numBeatsToDisplay, containerWidth, sourceBPM); // Pass BPM for density
-                updateBeatAndWaveformVisualizations(targetAudio, targetBeatVisualizerContainer, targetBeatBarsWrapper, targetWaveformProgressBar, sourceBPM, targetTrackNumber, numBeatsToDisplay);
-            } else {
-                // If target audio is paused, just update the bars visually
-                createBeatBars(targetBeatBarsWrapper, numBeatsToDisplay, containerWidth, sourceBPM); // Pass BPM for density
-            }
-            console.log(`Synced track ${targetTrackNumber} to BPM: ${sourceBPM.toFixed(1)}`);
-        }
-
-        /**
-         * Cycles the zoom level for the beat visualizer.
-         * @param {number} trackNumber - The track number (1 or 2).
-         * @param {string} direction - 'in' for zoom in (fewer beats), 'out' for zoom out (more beats).
-         */
-        function cycleBeatVisualizerZoom(trackNumber, direction) {
-            let currentZoomIndex;
-            let currentZoomValue;
-
-            if (trackNumber === 1) {
-                currentZoomValue = currentNumMainBeatsDisplayed1;
-            } else {
-                currentZoomValue = currentNumMainBeatsDisplayed2;
-            }
-
-            currentZoomIndex = ZOOM_LEVELS.indexOf(currentZoomValue);
-
-            let newZoomIndex = currentZoomIndex;
-            if (direction === 'in') { // Zoom in means showing fewer beats (smaller number)
-                newZoomIndex = (currentZoomIndex - 1 + ZOOM_LEVELS.length) % ZOOM_LEVELS.length;
-            } else if (direction === 'out') { // Zoom out means showing more beats (larger number)
-                newZoomIndex = (currentZoomIndex + 1) % ZOOM_LEVELS.length;
-            }
-
-            const newZoomLevel = ZOOM_LEVELS[newZoomIndex];
-            setBeatVisualizerZoom(trackNumber, newZoomLevel);
-        }
-
-        /**
-         * Sets the number of main beats displayed in the beat visualizer.
-         * @param {number} trackNumber - The track number (1 or 2).
-         * @param {number} targetNumMainBeats - The exact number of main beats to display (e.g., 4, 8, 16, 32).
-         */
-        function setBeatVisualizerZoom(trackNumber, targetNumMainBeats) {
-            let beatBarsWrapper;
-            let audio;
-            let bpmValueElement;
-            let beatVisualizerContainer;
-            let waveformProgressBar;
-
-            if (trackNumber === 1) {
-                currentNumMainBeatsDisplayed1 = targetNumMainBeats;
-                beatBarsWrapper = beatBarsWrapper1;
-                audio = audio1;
-                bpmValueElement = bpmValue1;
-                beatVisualizerContainer = beatVisualizer1;
-                waveformProgressBar = waveformProgress1;
-            } else { // trackNumber === 2
-                currentNumMainBeatsDisplayed2 = targetNumMainBeats;
-                beatBarsWrapper = beatBarsWrapper2;
-                audio = audio2;
-                bpmValueElement = bpmValue2;
-                beatVisualizerContainer = beatVisualizer2;
-                waveformProgressBar = waveformProgress2;
-            }
-
-            const containerWidth = beatVisualizerContainer.offsetWidth;
-            const currentBPM = parseFloat(bpmValueElement.textContent);
-            // Always recreate bars with the new zoom level and container width
-            createBeatBars(beatBarsWrapper, targetNumMainBeats, containerWidth, currentBPM); // Pass BPM for density
-
-            // If audio is playing, restart the animation loop with the new zoom level
-            if (!audio.paused) {
-                // Cancel existing animation frame for the specific track
-                if (trackNumber === 1 && animationFrameId1) {
-                    cancelAnimationFrame(animationFrameId1);
-                    animationFrameId1 = null;
-                } else if (trackNumber === 2 && animationFrameId2) {
-                    cancelAnimationFrame(animationFrameId2);
-                    animationFrameId2 = null;
-                }
-
-                // Start a new animation frame for the specific track
-                if (trackNumber === 1) {
-                    animationFrameId1 = requestAnimationFrame(() =>
-                        updateBeatAndWaveformVisualizations(audio, beatVisualizerContainer, beatBarsWrapper, waveformProgressBar, parseFloat(bpmValueElement.textContent), trackNumber, currentNumMainBeatsDisplayed1)
-                    );
-                } else {
-                    animationFrameId2 = requestAnimationFrame(() =>
-                        updateBeatAndWaveformVisualizations(audio, beatVisualizerContainer, beatBarsWrapper, waveformProgressBar, parseFloat(bpmValueElement.textContent), trackNumber, currentNumMainBeatsDisplayed2)
-                    );
-                }
-            } else {
-                // If paused, still update the visualization to center the first beat with new density
-                // Use a dummy audio object for updateBeatAndWaveformVisualizations if audio is paused
-                updateBeatAndWaveformVisualizations({ paused: true, currentTime: audio.currentTime, duration: audio.duration || 1 }, beatVisualizerContainer, beatBarsWrapper, waveformProgressBar, parseFloat(bpmValueElement.textContent), trackNumber, targetNumMainBeats);
-            }
-            console.log(`Track ${trackNumber} zoom set to display ${targetNumMainBeats} main beats.`);
+            jogState.animationFrameRotationId = requestAnimationFrame((ts) => updateJogWheelRotation(jogWheelElement, jogState, ts));
         }
 
 
-        // --- Event Listeners ---
-
-        // Play/Pause Buttons
-        playPause1.addEventListener('click', () => togglePlayPause(audio1, playPause1, kickPulse1, bpmValue1, beatVisualizer1, beatBarsWrapper1, waveformProgress1, 1));
-        playPause2.addEventListener('click', () => togglePlayPause(audio2, playPause2, kickPulse2, bpmValue2, beatVisualizer2, beatBarsWrapper2, waveformProgress2, 2));
-
-        // CUE Buttons
-        cue1Button.addEventListener('click', () => {
-            if (!audio1.paused) {
-                setCuePoint(audio1, 1);
-            } else {
-                jumpToCueAndPlay(audio1, cuePoint1, playPause1, kickPulse1, bpmValue1, beatVisualizer1, beatBarsWrapper1, waveformProgress1, 1);
-            }
-        });
-        cue2Button.addEventListener('click', () => {
-            if (!audio2.paused) {
-                setCuePoint(audio2, 2);
-            } else {
-                jumpToCueAndPlay(audio2, cuePoint2, playPause2, kickPulse2, bpmValue2, beatVisualizer2, beatBarsWrapper2, waveformProgress2, 2);
-            }
-        });
-
-        // Debug Play All Button
-        debugPlayAllButton.addEventListener('click', () => {
-            if (audio1.paused) {
-                togglePlayPause(audio1, playPause1, kickPulse1, bpmValue1, beatVisualizer1, beatBarsWrapper1, waveformProgress1, 1);
-            }
-            if (audio2.paused) {
-                togglePlayPause(audio2, playPause2, kickPulse2, bpmValue2, beatVisualizer2, beatBarsWrapper2, waveformProgress2, 2);
-            }
-        });
-
-        // BPM Sliders
-        bpmSlider1.addEventListener('input', (e) => {
-            const newBPM = parseFloat(e.target.value);
-            bpmValue1.textContent = newBPM.toFixed(1);
-            audio1.playbackRate = newBPM / initialBaseBPM1; // Adjust playback rate based on new BPM
-
-            // Re-start visualization to regenerate bars with new gaps and recalibrate animation
-            const containerWidth = beatVisualizer1.offsetWidth;
-            if (!audio1.paused) {
-                if (animationFrameId1) cancelAnimationFrame(animationFrameId1); // Stop old loop
-                animationFrameId1 = null;
-                createBeatBars(beatBarsWrapper1, currentNumMainBeatsDisplayed1, containerWidth, newBPM); // Recreate bars with new density
-                updateBeatAndWaveformVisualizations(audio1, beatVisualizer1, beatBarsWrapper1, waveformProgress1, newBPM, 1, currentNumMainBeatsDisplayed1);
-            } else {
-                // If paused, just update the bars visually
-                createBeatBars(beatBarsWrapper1, currentNumMainBeatsDisplayed1, containerWidth, newBPM);
-            }
-        });
-
-        bpmSlider2.addEventListener('input', (e) => {
-            const newBPM = parseFloat(e.target.value);
-            bpmValue2.textContent = newBPM.toFixed(1);
-            audio2.playbackRate = newBPM / initialBaseBPM2; // Adjust playback rate based on new BPM
-
-            // Re-start visualization
-            const containerWidth = beatVisualizer2.offsetWidth;
-            if (!audio2.paused) {
-                if (animationFrameId2) cancelAnimationFrame(animationFrameId2);
-                animationFrameId2 = null;
-                createBeatBars(beatBarsWrapper2, currentNumMainBeatsDisplayed2, containerWidth, newBPM); // Recreate bars with new density
-                updateBeatAndWaveformVisualizations(audio2, beatVisualizer2, beatBarsWrapper2, waveformProgress2, newBPM, 2, currentNumMainBeatsDisplayed2);
-            } else {
-                createBeatBars(beatBarsWrapper2, currentNumMainBeatsDisplayed2, containerWidth, newBPM);
-            }
-        });
-
-        // SYNC Buttons
-        sync1.addEventListener('click', () => syncBPM(audio2, audio1, bpmSlider1, bpmValue1, beatVisualizer1, beatBarsWrapper1, waveformProgress1, 1, initialBaseBPM1));
-        sync2.addEventListener('click', () => syncBPM(audio1, audio2, bpmSlider2, bpmValue2, beatVisualizer2, beatBarsWrapper2, waveformProgress2, 2, initialBaseBPM2));
-
-        // Crossfader
-        crossfader.addEventListener('input', (e) => {
-            const value = parseFloat(e.target.value);
-            audio1.volume = 1 - value;
-            audio2.volume = value;
-        });
-
-        // Jog Wheels (Drag functionality)
-        let isDraggingJog1 = false;
-        let isDraggingJog2 = false;
-        let initialMouseAngle1 = 0; // Initial angle of mouse relative to wheel center
-        let initialMouseAngle2 = 0;
-        // Removed wasPlaying1 and wasPlaying2 as per request
-
-        // Variables to accumulate jog wheel rotation for visual feedback
-        let currentJogRotation1 = 0;
-        let currentJogRotation2 = 0;
-
-        function getAngle(e, element) {
+        // Function to calculate angle from center of an element
+        function getAngle(event, element) {
             const rect = element.getBoundingClientRect();
             const centerX = rect.left + rect.width / 2;
             const centerY = rect.top + rect.height / 2;
-            const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * 180 / Math.PI;
-            return angle;
+            const mouseX = event.clientX || event.touches[0].clientX;
+            const mouseY = event.clientY || event.touches[0].clientY;
+            return Math.atan2(mouseY - centerY, mouseX - centerX) * (180 / Math.PI);
         }
 
-        jogWheel1.addEventListener('mousedown', (e) => {
-            isDraggingJog1 = true;
-            // Removed audio1.pause()
-            initialMouseAngle1 = getAngle(e, jogWheel1);
-            jogWheel1.style.transition = 'none'; // Disable transition during drag
-            jogWheel1.style.cursor = 'grabbing';
-        });
+        // Function to start jog wheel drag
+        function startJogDrag(event, jogWheelElement, jogState) {
+            jogState.isDragging = true;
+            jogState.startAngle = getAngle(event, jogWheelElement);
+            jogState.lastAngle = jogState.startAngle;
+            jogWheelElement.style.cursor = 'grabbing';
+            event.preventDefault(); // Prevent default browser behavior like text selection
 
-        jogWheel2.addEventListener('mousedown', (e) => {
-            isDraggingJog2 = true;
-            // Removed audio2.pause()
-            initialMouseAngle2 = getAngle(e, jogWheel2);
-            jogWheel2.style.transition = 'none';
-            jogWheel2.style.cursor = 'grabbing';
-        });
-
-        document.addEventListener('mousemove', (e) => {
-            if (isDraggingJog1) {
-                const newMouseAngle = getAngle(e, jogWheel1);
-                let angleDifference = newMouseAngle - initialMouseAngle1;
-
-                // Removed angle normalization to allow for more than 360 degrees of rotation
-                // if (angleDifference > 180) angleDifference -= 360;
-                // if (angleDifference < -180) angleDifference += 360;
-
-                // Accumulate visual rotation
-                currentJogRotation1 += angleDifference;
-                jogWheel1.style.transform = `translateY(-50%) rotate(${currentJogRotation1}deg)`;
-
-                // Calculate time change based on angular movement
-                const currentBPM = parseFloat(bpmValue1.textContent);
-                const msPerMainBeat = (60 / currentBPM) * 1000;
-                const timePer4Beats = (4 * msPerMainBeat) / 1000; // time in seconds for 4 beats
-
-                // Map angle difference to time change
-                const timeShift = (angleDifference / 360) * timePer4Beats;
-                audio1.currentTime = Math.max(0, Math.min(audio1.duration, audio1.currentTime + timeShift));
-
-                initialMouseAngle1 = newMouseAngle; // Update initial mouse angle for next delta calculation
-
-                // Manually update visualization during scrub
-                updateBeatAndWaveformVisualizations(audio1, beatVisualizer1, beatBarsWrapper1, waveformProgress1, currentBPM, 1, currentNumMainBeatsDisplayed1);
+            // NEW: Stop automatic rotation when dragging starts
+            if (jogState.animationFrameRotationId) {
+                cancelAnimationFrame(jogState.animationFrameRotationId);
+                jogState.animationFrameRotationId = null;
             }
-            if (isDraggingJog2) {
-                const newMouseAngle = getAngle(e, jogWheel2);
-                let angleDifference = newMouseAngle - initialMouseAngle2;
-                // Removed angle normalization
-                // if (angleDifference > 180) angleDifference -= 360;
-                // if (angleDifference < -180) angleDifference += 360;
+        }
 
-                // Accumulate visual rotation
-                currentJogRotation2 += angleDifference;
-                jogWheel2.style.transform = `translateY(-50%) rotate(${currentJogRotation2}deg)`;
+        // Function to handle jog wheel drag
+        function handleJogDrag(event, jogWheelElement, jogState) {
+            if (!jogState.isDragging) return;
 
-                const currentBPM = parseFloat(bpmValue2.textContent);
-                const msPerMainBeat = (60 / currentBPM) * 1000;
-                const timePer4Beats = (4 * msPerMainBeat) / 1000;
+            const currentAngle = getAngle(event, jogWheelElement);
+            let deltaAngle = currentAngle - jogState.lastAngle;
 
-                const timeShift = (angleDifference / 360) * timePer4Beats;
-                audio2.currentTime = Math.max(0, Math.min(audio2.duration, audio2.currentTime + timeShift));
-
-                initialMouseAngle2 = newMouseAngle;
-
-                updateBeatAndWaveformVisualizations(audio2, beatVisualizer2, beatBarsWrapper2, waveformProgress2, currentBPM, 2, currentNumMainBeatsDisplayed2);
+            // Handle angle wrap-around (e.g., going from 170 to -170 degrees)
+            if (deltaAngle > 180) {
+                deltaAngle -= 360;
+            } else if (deltaAngle < -180) {
+                deltaAngle += 360;
             }
-        });
 
-        document.addEventListener('mouseup', () => {
-            if (isDraggingJog1) {
-                isDraggingJog1 = false;
-                jogWheel1.style.transition = 'transform 0.1s ease-out'; // Re-enable transition
-                // No reset to 0deg, keep the accumulated visual rotation
-                jogWheel1.style.cursor = 'grab';
-                // Removed audio1.play()
+            jogState.currentRotation += deltaAngle;
+            jogWheelElement.style.transform = `rotate(${jogState.currentRotation}deg)`;
+
+            // Audio manipulation (Nudging/Scratching)
+            if (!jogState.audioElement.paused) {
+                const bpm = parseFloat(jogState.bpmValueElement.textContent);
+                const nudgeSensitivity = 0.0005; // How much a small rotation affects playback rate
+                const scratchThreshold = 5; // Degrees per frame to trigger scratch
+
+                if (Math.abs(deltaAngle) > scratchThreshold) {
+                    // Basic scratching effect: jump time
+                    const timeJump = deltaAngle * (bpm / 120) * 0.005; // Adjust jump based on BPM and rotation
+                    jogState.audioElement.currentTime += timeJump;
+                } else {
+                    // Nudging effect: temporary pitch bend
+                    if (jogState.nudgeTimeout) clearTimeout(jogState.nudgeTimeout);
+
+                    const originalPlaybackRate = bpm / (jogState.audioElement === audio1 ? initialBaseBPM1 : initialBaseBPM2);
+                    const newPlaybackRate = originalPlaybackRate + (deltaAngle * nudgeSensitivity);
+
+                    // Clamp playback rate to prevent extreme values
+                    jogState.audioElement.playbackRate = Math.max(0.5, Math.min(2.0, newPlaybackRate));
+
+                    jogState.nudgeTimeout = setTimeout(() => {
+                        jogState.audioElement.playbackRate = originalPlaybackRate; // Return to original rate
+                    }, 100); // Nudge effect duration
+                }
+
+                // Update beat visualization after jog wheel interaction
+                updateBeatVisualization(jogState.audioElement, jogState.beatBarsWrapper, jogState.timeoutsArray, jogState.currentNumMainBeatsDisplayed);
             }
-            if (isDraggingJog2) {
-                isDraggingJog2 = false;
-                jogWheel2.style.transition = 'transform 0.1s ease-out';
-                // No reset to 0deg, keep the accumulated visual rotation
-                jogWheel2.style.cursor = 'grab';
-                // Removed audio2.play()
+
+            jogState.lastAngle = currentAngle;
+        }
+
+        // Function to end jog wheel drag
+        function endJogDrag(jogWheelElement, jogState) {
+            jogState.isDragging = false;
+            jogWheelElement.style.cursor = 'grab';
+            if (jogState.nudgeTimeout) {
+                clearTimeout(jogState.nudgeTimeout);
+                // Ensure playback rate returns to normal after drag ends
+                const bpm = parseFloat(jogState.bpmValueElement.textContent);
+                jogState.audioElement.playbackRate = bpm / (jogState.audioElement === audio1 ? initialBaseBPM1 : initialBaseBPM2);
             }
-        });
-
-        // Add touch event listeners for jog wheels for mobile responsiveness
-        jogWheel1.addEventListener('touchstart', (e) => {
-            e.preventDefault(); // Prevent scrolling
-            isDraggingJog1 = true;
-            // Removed audio1.pause()
-            initialMouseAngle1 = getAngle(e.touches[0], jogWheel1);
-            jogWheel1.style.transition = 'none';
-            jogWheel1.style.cursor = 'grabbing';
-        }, { passive: false });
-
-        jogWheel2.addEventListener('touchstart', (e) => {
-            e.preventDefault(); // Prevent scrolling
-            isDraggingJog2 = true;
-            // Removed audio2.pause()
-            initialMouseAngle2 = getAngle(e.touches[0], jogWheel2);
-            jogWheel2.style.transition = 'none';
-            jogWheel2.style.cursor = 'grabbing';
-        }, { passive: false });
-
-        document.addEventListener('touchmove', (e) => {
-            if (isDraggingJog1) {
-                const newMouseAngle = getAngle(e.touches[0], jogWheel1);
-                let angleDifference = newMouseAngle - initialMouseAngle1;
-                // Removed angle normalization
-                // if (angleDifference > 180) angleDifference -= 360;
-                // if (angleDifference < -180) angleDifference += 360;
-
-                currentJogRotation1 += angleDifference;
-                jogWheel1.style.transform = `translateY(-50%) rotate(${currentJogRotation1}deg)`;
-
-                const currentBPM = parseFloat(bpmValue1.textContent);
-                const msPerMainBeat = (60 / currentBPM) * 1000;
-                const timePer4Beats = (4 * msPerMainBeat) / 1000;
-
-                const timeShift = (angleDifference / 360) * timePer4Beats;
-                audio1.currentTime = Math.max(0, Math.min(audio1.duration, audio1.currentTime + timeShift));
-
-                initialMouseAngle1 = newMouseAngle;
-
-                updateBeatAndWaveformVisualizations(audio1, beatVisualizer1, beatBarsWrapper1, waveformProgress1, currentBPM, 1, currentNumMainBeatsDisplayed1);
+            // NEW: Resume automatic rotation after drag ends, if audio is playing
+            if (!jogState.audioElement.paused && !jogState.animationFrameRotationId) {
+                jogState.lastRotationTime = performance.now(); // Reset time for smooth restart
+                jogState.animationFrameRotationId = requestAnimationFrame((ts) => updateJogWheelRotation(jogWheelElement, jogState, ts));
             }
-            if (isDraggingJog2) {
-                const newMouseAngle = getAngle(e.touches[0], jogWheel2);
-                let angleDifference = newMouseAngle - initialMouseAngle2;
-                // Removed angle normalization
-                // if (angleDifference > 180) angleDifference -= 360;
-                // if (angleDifference < -180) angleDifference += 360;
+        }
 
-                currentJogRotation2 += angleDifference;
-                jogWheel2.style.transform = `translateY(-50%) rotate(${currentJogRotation2}deg)`;
+        // Event listeners for Jog Wheel 1
+        jogWheel1.addEventListener('mousedown', (e) => startJogDrag(e, jogWheel1, jogWheelState1));
+        document.addEventListener('mousemove', (e) => handleJogDrag(e, jogWheel1, jogWheelState1));
+        document.addEventListener('mouseup', () => endJogDrag(jogWheel1, jogWheelState1));
 
-                const currentBPM = parseFloat(bpmValue2.textContent);
-                const msPerMainBeat = (60 / currentBPM) * 1000;
-                const timePer4Beats = (4 * msPerMainBeat) / 1000;
+        // Add touch events for mobile
+        jogWheel1.addEventListener('touchstart', (e) => startJogDrag(e, jogWheel1, jogWheelState1));
+        document.addEventListener('touchmove', (e) => handleJogDrag(e, jogWheel1, jogWheelState1));
+        document.addEventListener('touchend', () => endJogDrag(jogWheel1, jogWheelState1));
 
-                const timeShift = (angleDifference / 360) * timePer4Beats;
-                audio2.currentTime = Math.max(0, Math.min(audio2.duration, audio2.currentTime + timeShift));
+        // Event listeners for Jog Wheel 2
+        jogWheel2.addEventListener('mousedown', (e) => startJogDrag(e, jogWheel2, jogWheelState2));
+        document.addEventListener('mousemove', (e) => handleJogDrag(e, jogWheel2, jogWheelState2));
+        document.addEventListener('mouseup', () => endJogDrag(jogWheel2, jogWheelState2));
 
-                initialMouseAngle2 = newMouseAngle;
+        // Add touch events for mobile
+        jogWheel2.addEventListener('touchstart', (e) => startJogDrag(e, jogWheel2, jogWheelState2));
+        document.addEventListener('touchmove', (e) => handleJogDrag(e, jogWheel2, jogWheelState2));
+        document.addEventListener('touchend', () => endJogDrag(jogWheel2, jogWheelState2));
 
-                updateBeatAndWaveformVisualizations(audio2, beatVisualizer2, beatBarsWrapper2, waveformProgress2, currentBPM, 2, currentNumMainBeatsDisplayed2);
-            }
-        }, { passive: false });
-
-        document.addEventListener('touchend', () => {
-            if (isDraggingJog1) {
-                isDraggingJog1 = false;
-                jogWheel1.style.transition = 'transform 0.1s ease-out';
-                // No reset to 0deg, keep the accumulated visual rotation
-                jogWheel1.style.cursor = 'grab';
-                // Removed audio1.play()
-            }
-            if (isDraggingJog2) {
-                isDraggingJog2 = false;
-                jogWheel2.style.transition = 'transform 0.1s ease-out';
-                // No reset to 0deg, keep the accumulated visual rotation
-                jogWheel2.style.cursor = 'grab';
-                // Removed audio2.play()
+        // Event Listeners for Play/Pause
+        playPause1.addEventListener('click', () => {
+            if (audio1.paused) {
+                audio1.play();
+                playPause1.innerHTML = '⏸️ PAUSE A';
+                // Using kickPulse1 (which is beatVisualizer1) as the target for the kick pulse effect
+                startKickAnimationInterval(audio1, kickPulse1, 'kickInterval1', parseFloat(bpmValue1.textContent));
+                updateBeatVisualization(audio1, beatBarsWrapper1, beatHighlightTimeouts1, currentNumMainBeatsDisplayed1);
+                // NEW: Start jog wheel rotation when playing
+                jogWheelState1.lastRotationTime = performance.now(); // Reset time
+                jogWheelState1.animationFrameRotationId = requestAnimationFrame((ts) => updateJogWheelRotation(jogWheel1, jogWheelState1, ts));
+            } else {
+                audio1.pause();
+                playPause1.innerHTML = '▶️ PLAY A';
+                clearInterval(kickInterval1);
+                cancelAnimationFrame(jogWheelState1.animationFrameId); // For beat visualizer
+                // NEW: Stop jog wheel rotation when paused
+                if (jogWheelState1.animationFrameRotationId) {
+                    cancelAnimationFrame(jogWheelState1.animationFrameRotationId);
+                    jogWheelState1.animationFrameRotationId = null;
+                }
+                clearBeatHighlightTimeouts(beatHighlightTimeouts1);
             }
         });
 
-        // Zoom button event listeners (new direct setters)
-        zoomIn1.addEventListener('click', () => cycleBeatVisualizerZoom(1, 'in'));
-        zoomOut1.addEventListener('click', () => cycleBeatVisualizerZoom(1, 'out'));
-        zoomIn2.addEventListener('click', () => cycleBeatVisualizerZoom(2, 'in'));
-        zoomOut2.addEventListener('click', () => cycleBeatVisualizerZoom(2, 'out'));
+        playPause2.addEventListener('click', () => {
+            if (audio2.paused) {
+                audio2.play();
+                playPause2.innerHTML = '⏸️ PAUSE B';
+                // Using kickPulse2 (which is beatVisualizer2) as the target for the kick pulse effect
+                startKickAnimationInterval(audio2, kickPulse2, 'kickInterval2', parseFloat(bpmValue2.textContent));
+                updateBeatVisualization(audio2, beatBarsWrapper2, beatHighlightTimeouts2, currentNumMainMainBeatsDisplayed2);
+                // NEW: Start jog wheel rotation when playing
+                jogWheelState2.lastRotationTime = performance.now(); // Reset time
+                jogWheelState2.animationFrameRotationId = requestAnimationFrame((ts) => updateJogWheelRotation(jogWheel2, jogWheelState2, ts));
+            } else {
+                audio2.pause();
+                playPause2.innerHTML = '▶️ PLAY B';
+                clearInterval(kickInterval2);
+                cancelAnimationFrame(jogWheelState2.animationFrameId); // For beat visualizer
+                // NEW: Stop jog wheel rotation when paused
+                if (jogWheelState2.animationFrameRotationId) {
+                    cancelAnimationFrame(jogWheelState2.animationFrameRotationId);
+                    jogWheelState2.animationFrameRotationId = null;
+                }
+                clearBeatHighlightTimeouts(beatHighlightTimeouts2);
+            }
+        });
+
+        // Event Listeners for CUE buttons
+        cue1Button.addEventListener('click', () => {
+            audio1.pause(); // Pause on CUE
+            playPause1.innerHTML = '▶️ PLAY A';
+            clearInterval(kickInterval1);
+            cancelAnimationFrame(jogWheelState1.animationFrameId);
+            if (jogWheelState1.animationFrameRotationId) { // Stop jog wheel rotation
+                cancelAnimationFrame(jogWheelState1.animationFrameRotationId);
+                jogWheelState1.animationFrameRotationId = null;
+            }
+            clearBeatHighlightTimeouts(beatHighlightTimeouts1);
+
+            audio1.currentTime = cuePoint1; // Go to cue point
+            console.log(`CUE L set to: ${cuePoint1.toFixed(2)}s. Now at CUE L.`);
+        });
+
+        cue2Button.addEventListener('click', () => {
+            audio2.pause(); // Pause on CUE
+            playPause2.innerHTML = '▶️ PLAY B';
+            clearInterval(kickInterval2);
+            cancelAnimationFrame(jogWheelState2.animationFrameId);
+            if (jogWheelState2.animationFrameRotationId) { // Stop jog wheel rotation
+                cancelAnimationFrame(jogWheelState2.animationFrameRotationId);
+                jogWheelState2.animationFrameRotationId = null;
+            }
+            clearBeatHighlightTimeouts(beatHighlightTimeouts2);
+
+            audio2.currentTime = cuePoint2; // Go to cue point
+            console.log(`CUE R set to: ${cuePoint2.toFixed(2)}s. Now at CUE R.`);
+        });
 
 
-        // Initial setup calls
-        window.onload = function() {
-            // Get container width for dynamic bar sizing
-            const containerWidth1 = beatVisualizer1.offsetWidth;
-            const containerWidth2 = beatVisualizer2.offsetWidth;
+        // "Play All" Debug Button
+        debugPlayAllButton.addEventListener('click', () => {
+            const isAudio1Playing = !audio1.paused;
+            const isAudio2Playing = !audio2.paused;
 
-            // Pre-create beat bars for initial visual state
-            createBeatBars(beatBarsWrapper1, currentNumMainBeatsDisplayed1, containerWidth1, initialBaseBPM1);
-            createBeatBars(beatBarsWrapper2, currentNumMainBeatsDisplayed2, containerWidth2, initialBaseBPM2);
+            if (isAudio1Playing && isAudio2Playing) {
+                // Both playing, stop both
+                audio1.pause();
+                audio2.pause();
+                playPause1.innerHTML = '▶️ PLAY A';
+                playPause2.innerHTML = '▶️ PLAY B';
+                clearInterval(kickInterval1);
+                clearInterval(kickInterval2);
+                cancelAnimationFrame(jogWheelState1.animationFrameId);
+                cancelAnimationFrame(jogWheelState2.animationFrameId);
+                if (jogWheelState1.animationFrameRotationId) { // Stop jog wheel rotation
+                    cancelAnimationFrame(jogWheelState1.animationFrameRotationId);
+                    jogWheelState1.animationFrameRotationId = null;
+                }
+                if (jogWheelState2.animationFrameRotationId) { // Stop jog wheel rotation
+                    cancelAnimationFrame(jogWheelState2.animationFrameRotationId);
+                    jogWheelState2.animationFrameRotationId = null;
+                }
+                clearBeatHighlightTimeouts(beatHighlightTimeouts1);
+                clearBeatHighlightTimeouts(beatHighlightTimeouts2);
+            } else {
+                // At least one is paused, play both from cue points
+                if (audio1.paused) {
+                    audio1.currentTime = cuePoint1; // Go to cue point
+                    audio1.play();
+                    playPause1.innerHTML = '⏸️ PAUSE A';
+                    startKickAnimationInterval(audio1, kickPulse1, 'kickInterval1', parseFloat(bpmValue1.textContent));
+                    updateBeatVisualization(audio1, beatBarsWrapper1, beatHighlightTimeouts1, currentNumMainBeatsDisplayed1);
+                    jogWheelState1.lastRotationTime = performance.now();
+                    jogWheelState1.animationFrameRotationId = requestAnimationFrame((ts) => updateJogWheelRotation(jogWheel1, jogWheelState1, ts));
+                }
+                if (audio2.paused) {
+                    audio2.currentTime = cuePoint2; // Go to cue point
+                    audio2.play();
+                    playPause2.innerHTML = '⏸️ PAUSE B';
+                    startKickAnimationInterval(audio2, kickPulse2, 'kickInterval2', parseFloat(bpmValue2.textContent));
+                    updateBeatVisualization(audio2, beatBarsWrapper2, beatHighlightTimeouts2, currentNumMainMainBeatsDisplayed2);
+                    jogWheelState2.lastRotationTime = performance.now();
+                    jogWheelState2.animationFrameRotationId = requestAnimationFrame((ts) => updateJogWheelRotation(jogWheel2, jogWheelState2, ts));
+                }
+            }
+        });
 
-            // Set initial centered position for beat bars (even if paused)
-            updateBeatAndWaveformVisualizations({ paused: true, currentTime: 0, duration: 1 }, beatVisualizer1, beatBarsWrapper1, waveformProgress1, initialBaseBPM1, 1, currentNumMainBeatsDisplayed1);
-            updateBeatAndWaveformVisualizations({ paused: true, currentTime: 0, duration: 1 }, beatVisualizer2, beatBarsWrapper2, waveformProgress2, initialBaseBPM2, 2, currentNumMainBeatsDisplayed2);
+        // Event Listeners for BPM sliders
+        bpmSlider1.addEventListener('input', () => {
+            const newBPM = parseFloat(bpmSlider1.value);
+            bpmValue1.textContent = newBPM.toFixed(1);
+            audio1.playbackRate = newBPM / initialBaseBPM1; // Adjust playback rate based on original BPM
+            if (!audio1.paused) {
+                startKickAnimationInterval(audio1, kickPulse1, 'kickInterval1', newBPM);
+                updateBeatVisualization(audio1, beatBarsWrapper1, beatHighlightTimeouts1, currentNumMainBeatsDisplayed1);
+                // NEW: Restart jog wheel rotation to reflect new BPM/playback rate
+                if (jogWheelState1.animationFrameRotationId) {
+                    cancelAnimationFrame(jogWheelState1.animationFrameRotationId);
+                }
+                jogWheelState1.lastRotationTime = performance.now();
+                jogWheelState1.animationFrameRotationId = requestAnimationFrame((ts) => updateJogWheelRotation(jogWheel1, jogWheelState1, ts));
+            }
+        });
 
-            // Start the continuous sync check loop
-            requestAnimationFrame(checkSyncedKicks);
-        };
+        bpmSlider2.addEventListener('input', () => {
+            const newBPM = parseFloat(bpmSlider2.value);
+            bpmValue2.textContent = newBPM.toFixed(1);
+            audio2.playbackRate = newBPM / initialBaseBPM2; // Adjust playback rate based on original BPM
+            if (!audio2.paused) {
+                startKickAnimationInterval(audio2, kickPulse2, 'kickInterval2', newBPM);
+                updateBeatVisualization(audio2, beatBarsWrapper2, beatHighlightTimeouts2, currentNumMainMainBeatsDisplayed2);
+                // NEW: Restart jog wheel rotation to reflect new BPM/playback rate
+                if (jogWheelState2.animationFrameRotationId) {
+                    cancelAnimationFrame(jogWheelState2.animationFrameRotationId);
+                }
+                jogWheelState2.lastRotationTime = performance.now();
+                jogWheelState2.animationFrameRotationId = requestAnimationFrame((ts) => updateJogWheelRotation(jogWheel2, jogWheelState2, ts));
+            }
+        });
+
+        // Event Listeners for SYNC buttons (simple BPM matching for mockup)
+        sync1.addEventListener('click', () => {
+            const targetBPM = parseFloat(bpmValue2.textContent);
+            bpmSlider1.value = targetBPM.toFixed(1);
+            bpmValue1.textContent = targetBPM.toFixed(1);
+            audio1.playbackRate = targetBPM / initialBaseBPM1;
+            if (!audio1.paused) {
+                startKickAnimationInterval(audio1, kickPulse1, 'kickInterval1', targetBPM);
+                updateBeatVisualization(audio1, beatBarsWrapper1, beatHighlightTimeouts1, currentNumMainBeatsDisplayed1);
+                // NEW: Restart jog wheel rotation to reflect new BPM/playback rate
+                if (jogWheelState1.animationFrameRotationId) {
+                    cancelAnimationFrame(jogWheelState1.animationFrameRotationId);
+                }
+                jogWheelState1.lastRotationTime = performance.now();
+                jogWheelState1.animationFrameRotationId = requestAnimationFrame((ts) => updateJogWheelRotation(jogWheel1, jogWheelState1, ts));
+            }
+        });
+
+        sync2.addEventListener('click', () => {
+            const targetBPM = parseFloat(bpmValue1.textContent);
+            bpmSlider2.value = targetBPM.toFixed(1);
+            bpmValue2.textContent = targetBPM.toFixed(1);
+            audio2.playbackRate = targetBPM / initialBaseBPM2;
+            if (!audio2.paused) {
+                startKickAnimationInterval(audio2, kickPulse2, 'kickInterval2', targetBPM);
+                updateBeatVisualization(audio2, beatBarsWrapper2, beatHighlightTimeouts2, currentNumMainMainBeatsDisplayed2);
+                // NEW: Restart jog wheel rotation to reflect new BPM/playback rate
+                if (jogWheelState2.animationFrameRotationId) {
+                    cancelAnimationFrame(jogWheelState2.animationFrameRotationId);
+                }
+                jogWheelState2.lastRotationTime = performance.now();
+                jogWheelState2.animationFrameRotationId = requestAnimationFrame((ts) => updateJogWheelRotation(jogWheel2, jogWheelState2, ts));
+            }
+        });
+
+        // Crossfader logic
+        crossfader.addEventListener('input', () => {
+            const value = parseFloat(crossfader.value);
+            audio1.volume = 1 - value;
+            audio2.volume = value;
+
+            // Calculate glow intensity based on volume
+            const glowIntensityLeft = (1 - value).toFixed(2); // Invert for left channel
+            const glowIntensityRight = value.toFixed(2); // Direct for right channel
+
+            // Apply glow to left beat visualizer
+            beatVisualizer1.classList.add('glow-left');
+            beatVisualizer1.style.setProperty('--glow-intensity-left', glowIntensityLeft);
+            if (glowIntensityLeft == 0) {
+                beatVisualizer1.classList.remove('glow-left');
+            }
+
+            // Apply glow to right beat visualizer
+            beatVisualizer2.classList.add('glow-right');
+            beatVisualizer2.style.setProperty('--glow-intensity-right', glowIntensityRight);
+            if (glowIntensityRight == 0) {
+                beatVisualizer2.classList.remove('glow-right');
+            }
+        });
+
+        // Initial setup for beat visualization
+        const initialVisualizerWidth = beatVisualizer1.offsetWidth || 200; 
+        generateBeatBars(beatBarsWrapper1, TOTAL_GENERATED_SUB_BEATS / SUB_BEATS_PER_MAIN_BEAT, SUB_BEATS_PER_MAIN_BEAT, initialVisualizerWidth);
+        generateBeatBars(beatBarsWrapper2, TOTAL_GENERATED_SUB_BEATS / SUB_BEATS_PER_MAIN_BEAT, SUB_BEATS_PER_MAIN_BEAT, initialVisualizerWidth);
+
+        // Zoom functionality
+        function applyZoom(trackNum, direction) {
+            let currentZoomLevelIndex;
+            let currentNumMainBeatsDisplayed;
+            let beatBarsWrapper;
+            let audio;
+            let timeoutsArray;
+            let jogState;
+
+            if (trackNum === 1) {
+                currentZoomLevelIndex = ZOOM_LEVELS.indexOf(currentNumMainBeatsDisplayed1);
+                currentNumMainBeatsDisplayed = currentNumMainBeatsDisplayed1;
+                beatBarsWrapper = beatBarsWrapper1;
+                audio = audio1;
+                timeoutsArray = beatHighlightTimeouts1;
+                jogState = jogWheelState1;
+            } else {
+                currentZoomLevelIndex = ZOOM_LEVELS.indexOf(currentNumMainMainBeatsDisplayed2);
+                currentNumMainMainBeatsDisplayed = currentNumMainMainBeatsDisplayed2;
+                beatBarsWrapper = beatBarsWrapper2;
+                audio = audio2;
+                timeoutsArray = beatHighlightTimeouts2;
+                jogState = jogWheelState2;
+            }
+
+            if (direction === 'in' && currentZoomLevelIndex < ZOOM_LEVELS.length - 1) {
+                currentZoomLevelIndex++;
+            } else if (direction === 'out' && currentZoomLevelIndex > 0) {
+                currentZoomLevelIndex--;
+            }
+            
+            const newNumMainBeatsDisplayed = ZOOM_LEVELS[currentZoomLevelIndex];
+            
+            if (trackNum === 1) {
+                currentNumMainBeatsDisplayed1 = newNumMainBeatsDisplayed;
+                jogWheelState1.currentNumMainBeatsDisplayed = newNumMainBeatsDisplayed;
+            } else {
+                currentNumMainMainBeatsDisplayed2 = newNumMainBeatsDisplayed;
+                jogWheelState2.currentNumMainBeatsDisplayed = newNumMainBeatsDisplayed;
+            }
+            
+            generateBeatBars(beatBarsWrapper, TOTAL_GENERATED_SUB_BEATS / SUB_BEATS_PER_MAIN_BEAT, SUB_BEATS_PER_MAIN_BEAT, beatBarsWrapper.parentElement.offsetWidth);
+            if (!audio.paused) {
+                updateBeatVisualization(audio, beatBarsWrapper, timeoutsArray, newNumMainBeatsDisplayed);
+            }
+        }
+
+        zoomIn1.addEventListener('click', () => applyZoom(1, 'in'));
+        zoomOut1.addEventListener('click', () => applyZoom(1, 'out'));
+        zoomIn2.addEventListener('click', () => applyZoom(2, 'in'));
+        zoomOut2.addEventListener('click', () => applyZoom(2, 'out'));
+
+        // NEW: Function to set up the SVG trace properties
+        function setupJogTrace(circleElement) {
+            const radius = parseFloat(circleElement.getAttribute('r'));
+            const circumference = 2 * Math.PI * radius;
+            
+            // "6 bars" means roughly 1/6th of the circle's circumference
+            const dashLength = circumference / 6;
+            const gapLength = circumference - dashLength;
+
+            circleElement.style.strokeDasharray = `${dashLength} ${gapLength}`;
+            // Position the trace so its center is at the top (after SVG rotation -90deg)
+            // The -90deg transform on SVG makes the 0-degree point of the circle (usually right-most)
+            // appear at the top. So, to center a dash of length `dashLength` at this 0-degree point,
+            // we need to offset it by half its length.
+            circleElement.style.strokeDashoffset = `${-dashLength / 2}`;
+        }
+
+        // Call setup for both jog traces when the script loads
+        setupJogTrace(jogTraceCircle1);
+        setupJogTrace(jogTraceCircle2);
+
+
+        // Initial call to checkSyncedKicks to start the continuous check
+        requestAnimationFrame(checkSyncedKicks);
+
+        // Initial crossfader dispatch to set initial volumes and glows
+	    crossfader.dispatchEvent(new Event('input'));
 
     </script>
 </body>
