@@ -28,11 +28,35 @@
                                  0 0 0 12px #1a202c,
                                  0 20px 50px rgba(0, 0, 0, 0.7);
             position: relative;
-            overflow: hidden;
+            overflow: hidden; /* Crucial for containing the inner shadow within the border-radius */
             display: flex; /* Changed to flex to align content easier */
             flex-direction: column;
             padding-bottom: 50px;
+            transition: box-shadow 0.1s ease-out; /* Add transition for glow */
         }
+
+        /* New: Phone frame glow effect (INSET) */
+        .phone-frame.glow {
+            animation: phoneFrameInnerGlow 0.3s forwards;
+        }
+
+        @keyframes phoneFrameInnerGlow {
+            0% {
+                box-shadow:
+                    0 0 0 8px #2d3748, /* Existing outer border */
+                    0 0 0 12px #1a202c, /* Existing outer frame shadow */
+                    inset 0 0 20px 8px rgba(246, 173, 85, 0.7), /* INNER GLOW */
+                    0 20px 50px rgba(0, 0, 0, 0.7); /* Existing drop shadow */
+            }
+            100% {
+                box-shadow:
+                    0 0 0 8px #2d3748,
+                    0 0 0 12px #1a202c,
+                    inset 0 0 0 0 rgba(246, 173, 85, 0), /* Fades out the inner glow */
+                    0 20px 50px rgba(0, 0, 0, 0.7);
+            }
+        }
+
 
         .notch {
             width: 120px;
@@ -331,10 +355,37 @@
         .tap-to-sync-feedback.show {
             opacity: 1;
         }
+
+        /* Styles for Sync Progress Bar */
+        .sync-progress-container {
+            width: 100%;
+            height: 15px;
+            background-color: #4a5568; /* gray-700 */
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 15px;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
+        }
+
+        .sync-progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: #48bb78; /* green-500 */
+            border-radius: 8px;
+            transition: width 0.1s linear;
+        }
+
+        .sync-message {
+            margin-top: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #90cdf4; /* blue-300 */
+            text-align: center;
+        }
     </style>
 </head>
 <body>
-    <div class="phone-frame">
+    <div class="phone-frame" id="phone-frame">
         <div class="notch"></div>
 
         <div class="header-bar">
@@ -367,6 +418,11 @@
                 <button id="zoom-out-game" class="zoom-button">-</button>
                 <button id="zoom-in-game" class="zoom-button">+</button>
             </div>
+
+            <div class="sync-progress-container">
+                <div id="sync-progress-bar" class="sync-progress-bar"></div>
+            </div>
+            <div id="sync-message" class="sync-message" style="display: none;"></div>
         </div>
 
         <div class="flex-grow flex items-center justify-center relative">
@@ -388,13 +444,16 @@
         const gameAudio = document.getElementById('game-audio');
         const playPauseGame = document.getElementById('play-pause-game');
         const gameBPMValue = document.getElementById('game-bpm-value');
-        const userTappedBPMValue = document.getElementById('user-tapped-bpm-value'); // Nuevo elemento para BPM del usuario
+        const userTappedBPMValue = document.getElementById('user-tapped-bpm-value');
         const beatVisualizerGame = document.getElementById('beat-visualizer-game');
         const beatBarsWrapperGame = document.getElementById('beat-bars-wrapper-game');
         const zoomInGame = document.getElementById('zoom-in-game');
         const zoomOutGame = document.getElementById('zoom-out-game');
         const tapToSyncButton = document.getElementById('tap-to-sync-button');
         const tapSyncFeedback = document.getElementById('tap-sync-feedback');
+        const syncProgressBar = document.getElementById('sync-progress-bar');
+        const syncMessage = document.getElementById('sync-message');
+        const phoneFrame = document.getElementById('phone-frame'); // Get reference to the phone frame
 
         // --- Constants and Configuration ---
         const SUB_BEATS_PER_MAIN_BEAT = 4;
@@ -409,7 +468,13 @@
         let tapTimes = [];
         const TAP_WINDOW_MS = 3000; // Time window to consider taps for BPM calculation
         const MIN_TAPS = 3; // Minimum taps needed to calculate BPM
-        const SYNC_TOLERANCE_BPM = 1.0; // BPM tolerance for successful sync
+        const SYNC_TOLERANCE_BPM = 0.5; // BPM tolerance for successful sync, changed to 0.5 as per request
+
+        // Sync Progress Variables
+        let syncStartTime = 0; // Timestamp when user enters sync
+        let syncDuration = 0; // How long user has been in sync
+        const maxSyncTimeMs = 10000; // 10 seconds for full sync
+        let syncIntervalId = null; // To clear the interval for progress bar updates
 
         // Store animation frame ID for beat visualizer
         let beatVisualizerAnimationFrameId = null;
@@ -544,6 +609,50 @@
             }
         }
 
+        // --- Sync Progress Bar Update ---
+        function updateSyncProgressBar() {
+            if (syncStartTime === 0) {
+                syncProgressBar.style.width = '0%';
+                syncMessage.style.display = 'none';
+                return;
+            }
+
+            const currentTime = performance.now();
+            syncDuration = currentTime - syncStartTime;
+
+            const progressPercentage = Math.min(100, (syncDuration / maxSyncTimeMs) * 100);
+            syncProgressBar.style.width = `${progressPercentage}%`;
+            syncMessage.style.display = 'block';
+            syncMessage.textContent = `Tiempo en sync: ${(syncDuration / 1000).toFixed(1)}s`;
+
+            if (syncDuration >= maxSyncTimeMs) {
+                syncMessage.textContent = "¡Felicidades al usuario! ¡Sincronización completa!";
+                clearInterval(syncIntervalId);
+                syncIntervalId = null;
+                syncStartTime = 0; // Reset for next sync attempt
+                syncDuration = 0;
+                setTimeout(() => {
+                    syncMessage.style.display = 'none';
+                    syncProgressBar.style.width = '0%';
+                }, 3000); // Hide congratulatory message after 3 seconds
+            }
+        }
+
+        function startSyncProgress() {
+            if (!syncIntervalId) {
+                syncIntervalId = setInterval(updateSyncProgressBar, 100); // Update every 100ms
+            }
+        }
+
+        function stopSyncProgress() {
+            clearInterval(syncIntervalId);
+            syncIntervalId = null;
+            syncStartTime = 0;
+            syncDuration = 0;
+            syncProgressBar.style.width = '0%';
+            syncMessage.style.display = 'none';
+        }
+
         // --- Tap to Sync Functionality ---
         function handleTapToSync() {
             const now = performance.now();
@@ -556,6 +665,14 @@
             tapToSyncButton.classList.remove('glow');
             void tapToSyncButton.offsetWidth; // Trigger reflow
             tapToSyncButton.classList.add('glow');
+
+            // Add glow to phone frame
+            phoneFrame.classList.remove('glow'); // Reset animation
+            void phoneFrame.offsetWidth; // Trigger reflow
+            phoneFrame.classList.add('glow');
+            setTimeout(() => {
+                phoneFrame.classList.remove('glow'); // Remove glow after animation duration
+            }, 300); // Match animation duration
 
             if (tapTimes.length >= MIN_TAPS) {
                 // Calculate average interval between taps
@@ -571,8 +688,8 @@
                 // Update user BPM display
                 userTappedBPMValue.textContent = tappedBPM.toFixed(1);
 
-                // Adjust audio playback rate
-                gameAudio.playbackRate = tappedBPM / initialBaseBPMGame;
+                // *********** REMOVED: gameAudio.playbackRate = tappedBPM / initialBaseBPMGame; ***********
+                // The game audio playback rate is NOT changed. The user must match the song.
 
                 // Provide feedback (overlay)
                 tapSyncFeedback.textContent = `BPM: ${tappedBPM.toFixed(1)}`;
@@ -581,18 +698,17 @@
                     tapSyncFeedback.classList.remove('show');
                 }, 800); // Hide feedback after 0.8 seconds
 
-                // Visually "snap" the beat visualizer
-                if (!gameAudio.paused) {
-                    updateBeatVisualization(gameAudio, beatBarsWrapperGame, currentNumMainBeatsDisplayedGame);
-                }
-
-                // Check for sync success (optional, for actual game logic)
-                const currentSongBPM = initialBaseBPMGame; // The actual BPM of the song
+                // Check for sync success (within tolerance)
+                const currentSongBPM = initialBaseBPMGame;
                 if (Math.abs(tappedBPM - currentSongBPM) <= SYNC_TOLERANCE_BPM) {
-                    console.log("¡Sincronización exitosa!");
-                    // Add game scoring or visual reward here
+                    console.log("¡Dentro de la tolerancia de sincronización!");
+                    if (syncStartTime === 0) {
+                        syncStartTime = now; // Start sync timer
+                    }
+                    startSyncProgress(); // Start/continue updating the progress bar
                 } else {
-                    console.log("Necesitas más taps para sincronizarte mejor.");
+                    console.log("Fuera de la tolerancia de sincronización. Reiniciando contador.");
+                    stopSyncProgress(); // Stop and reset sync progress
                 }
 
             } else {
@@ -602,6 +718,7 @@
                  setTimeout(() => {
                      tapSyncFeedback.classList.remove('show');
                  }, 500);
+                 stopSyncProgress(); // Also stop progress if not enough taps
             }
         }
 
@@ -614,6 +731,7 @@
                 // Reset tap times on play/pause
                 tapTimes = [];
                 userTappedBPMValue.textContent = '--.--'; // Clear user BPM on play
+                stopSyncProgress(); // Ensure sync progress is reset on play/pause
                 // Start beat visualization
                 updateBeatVisualization(gameAudio, beatBarsWrapperGame, currentNumMainBeatsDisplayedGame);
             } else {
@@ -623,6 +741,7 @@
                 if (beatVisualizerAnimationFrameId) {
                     cancelAnimationFrame(beatVisualizerAnimationFrameId);
                 }
+                stopSyncProgress(); // Ensure sync progress is reset on play/pause
             }
         });
 
