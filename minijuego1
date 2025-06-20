@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DJ Mini Juego: Sincroniza el Beat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* Fondo oscuro para el body */
+            color: #e2e8f0; /* Color de texto claro */
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        /* Estilos base del frame del teléfono */
+        .phone-frame {
+            width: 375px;
+            height: 700px;
+            background-color: #1a202c;
+            border-radius: 40px;
+            box-shadow: 0 0 0 8px #2d3748,
+                                 0 0 0 12px #1a202c,
+                                 0 20px 50px rgba(0, 0, 0, 0.7);
+            position: relative;
+            overflow: hidden;
+            display: flex; /* Changed to flex to align content easier */
+            flex-direction: column;
+            padding-bottom: 50px;
+        }
+
+        .notch {
+            width: 120px;
+            height: 25px;
+            background-color: #1a202c;
+            border-bottom-left-radius: 15px;
+            border-bottom-right-radius: 15px;
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+        }
+
+        /* Styles for Beat Visualizer */
+        .beat-visualization-container {
+            width: 300px;
+            height: 50px;
+            background-color: #2d3748;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            align-items: center;
+            padding: 0;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+            z-index: 5;
+            justify-content: center;
+            transition: box-shadow 0.1s ease-out;
+        }
+
+        .beat-visualization-container.glow {
+            animation: beatGlow 0.3s forwards;
+        }
+
+        @keyframes beatGlow {
+            0% { box-shadow: 0 0 15px 5px rgba(229, 62, 62, 0.5), inset 0 0 5px rgba(0,0,0,0.5); }
+            100% { box-shadow: 0 0 5px 0px rgba(229, 62, 62, 0), inset 0 0 5px rgba(0,0,0,0.5); }
+        }
+
+        .beat-bars-wrapper {
+            display: flex;
+            height: 100%;
+            align-items: center;
+            will-change: transform;
+        }
+
+        .beat-bar {
+            border-radius: 3px;
+            opacity: 0.5;
+            transition: background-color 0.1s ease-out, opacity 0.1s ease-out, transform 0.1s ease-out, height 0.1s ease-out;
+            flex-shrink: 0;
+            margin: 0 1px;
+        }
+
+        .beat-bar.beat-type-kick {
+            background-color: #4299e1;
+            height: 35px;
+            transform: scale(1.0);
+        }
+
+        .beat-bar.beat-type-2,
+        .beat-bar.beat-type-3,
+        .beat-bar.beat-type-4 {
+            background-color: #a0aec0;
+            height: 25px;
+            transform: scale(0.7);
+        }
+
+        .beat-bar.active-beat {
+            background-color: #e53e3e;
+            opacity: 1;
+            transform: scale(1.3);
+            height: 40px;
+        }
+
+        .beat-bar.next-beat {
+            background-color: #f6e05e;
+            opacity: 0.9;
+            transform: scale(1.1);
+            height: 30px;
+        }
+
+        .line-indicator {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            height: 100%;
+            width: 2px;
+            background-color: #e53e3e;
+            z-index: 10;
+            box-shadow: 0 0 5px rgba(229, 62, 62, 0.7);
+        }
+
+        /* Styles for zoom buttons */
+        .zoom-buttons {
+            display: flex;
+            gap: 5px;
+        }
+
+        .zoom-button {
+            background-color: #4a5568;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+
+        .zoom-button:hover {
+            background-color: #2d3748;
+        }
+
+        /* --- Mini-game Specific Styles --- */
+        .header-bar {
+            background-color: #2d3748;
+            padding: 10px;
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            z-index: 15;
+            position: relative;
+        }
+
+        .header-bar .time, .header-bar .score {
+            font-size: 1.25rem; /* text-xl */
+            font-weight: 700; /* font-bold */
+            color: #90cdf4; /* text-blue-300 */
+        }
+
+        .header-bar .level-indicator {
+            background-color: #4299e1; /* bg-blue-500 */
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.875rem; /* text-sm */
+            font-weight: 600; /* font-semibold */
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+        }
+
+        /* Glasmorphismo para main-info-panel */
+        .main-info-panel {
+            background-color: rgba(45, 55, 72, 0.6); /* bg-gray-800 con 60% de opacidad */
+            backdrop-filter: blur(10px); /* Efecto de desenfoque */
+            border: 1px solid rgba(74, 85, 104, 0.3); /* Borde sutil */
+            padding: 16px;
+            margin: 20px 16px 0 16px;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2); /* Sombra para profundidad */
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .main-info-panel .song-title {
+            font-size: 1.5rem; /* text-2xl */
+            font-weight: 700; /* font-bold */
+            color: #e2e8f0;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .main-info-panel .artist {
+            font-size: 1rem; /* text-base */
+            color: #a0aec0;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .bpm-section-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px; /* Space between song BPM and user BPM */
+        }
+
+        /* BPM display within main-info-panel */
+        .bpm-display-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .bpm-display-panel .label {
+            font-size: 0.875rem; /* text-sm */
+            font-weight: 600; /* font-semibold */
+            color: #90cdf4;
+        }
+
+        .bpm-display-panel .value {
+            font-size: 1.875rem; /* text-3xl */
+            font-weight: 700; /* font-bold */
+            color: #e53e3e; /* text-red-500 */
+        }
+
+        .user-bpm-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            margin-top: 10px; /* Space between song BPM and user BPM */
+            padding-top: 10px; /* Add a bit of padding to separate visually */
+            border-top: 1px solid rgba(160, 174, 192, 0.2); /* Subtle separator */
+        }
+
+        .user-bpm-panel .label {
+            font-size: 0.8rem; /* Smaller text for user BPM label */
+            font-weight: 600;
+            color: #cbd5e0; /* Gray-300 */
+        }
+
+        .user-bpm-panel .value {
+            font-size: 1.5rem; /* text-2xl */
+            font-weight: 700;
+            color: #48bb78; /* Green-500 */
+        }
+
+
+        .buttons-container {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin-top: 20px;
+            padding: 0 16px;
+            box-sizing: border-box;
+        }
+
+        .action-button {
+            padding: 15px 25px;
+            border-radius: 30px;
+            font-size: 1.125rem; /* text-lg */
+            font-weight: 700; /* font-bold */
+            color: white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            flex-grow: 1; /* Make buttons grow to fill space */
+            margin: 0 8px; /* Add some margin between buttons */
+            text-align: center;
+        }
+
+        .action-button:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .action-button.slip-loop { /* Now play-pause */
+            background-color: #63b3ed; /* blue-400 */
+        }
+        .action-button.slip-loop:hover {
+            background-color: #4299e1; /* blue-500 */
+        }
+
+        .action-button.tap-to-sync {
+            background-color: #f6ad55; /* orange-400 */
+            position: relative; /* For glow effect */
+            overflow: hidden; /* For glow effect */
+        }
+        .action-button.tap-to-sync:hover {
+            background-color: #ed8936; /* orange-500 */
+        }
+
+        .action-button.tap-to-sync.glow {
+            animation: buttonGlow 0.2s forwards;
+        }
+
+        @keyframes buttonGlow {
+            0% { box-shadow: 0 0 15px 5px rgba(246, 173, 85, 0.7); }
+            100% { box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        }
+
+
+        .tap-to-sync-feedback {
+            position: absolute;
+            top: 74%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 8px 15px;
+            background-color: rgba(74, 222, 128, 0.9); /* green-400 with opacity */
+            color: white;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: opacity 0.2s ease-out;
+            z-index: 100;
+        }
+        .tap-to-sync-feedback.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="notch"></div>
+
+        <div class="header-bar">
+            <div class="time">00:45</div>
+            <div class="level-indicator">Level 1</div>
+            <div class="score">Score: 1250</div>
+        </div>
+
+        <div class="main-info-panel">
+            <div class="song-title" id="song-title-display">SCREECHMASTER</div>
+            <div class="artist" id="artist-display">DJ Less</div>
+
+            <div class="bpm-section-group">
+                <div class="bpm-display-panel">
+                    <span class="label">BPM de la Canción:</span>
+                    <span id="game-bpm-value" class="value">145.0</span>
+                </div>
+
+                <div class="user-bpm-panel">
+                    <span class="label">Tu BPM Actual:</span>
+                    <span id="user-tapped-bpm-value" class="value">--.--</span>
+                </div>
+            </div>
+
+            <div id="beat-visualizer-game" class="beat-visualization-container" style="width: 100%; max-width: 300px; height: 50px;">
+                <div class="line-indicator"></div>
+                <div id="beat-bars-wrapper-game" class="beat-bars-wrapper"></div>
+            </div>
+            <div class="zoom-buttons mt-2">
+                <button id="zoom-out-game" class="zoom-button">-</button>
+                <button id="zoom-in-game" class="zoom-button">+</button>
+            </div>
+        </div>
+
+        <div class="flex-grow flex items-center justify-center relative">
+            </div>
+
+
+        <div class="buttons-container mb-4">
+            <button id="play-pause-game" class="action-button slip-loop">▶️ PLAY / PAUSE</button>
+            <button id="tap-to-sync-button" class="action-button tap-to-sync">TAP TO SYNC</button>
+        </div>
+
+        <div id="tap-sync-feedback" class="tap-to-sync-feedback"></div>
+
+        <audio id="game-audio" src="https://raw.githubusercontent.com/DjLess/MP3_repo/main/SCREECHMASTER.mp3" preload="auto"></audio>
+
+    </div>
+
+    <script>
+        const gameAudio = document.getElementById('game-audio');
+        const playPauseGame = document.getElementById('play-pause-game');
+        const gameBPMValue = document.getElementById('game-bpm-value');
+        const userTappedBPMValue = document.getElementById('user-tapped-bpm-value'); // Nuevo elemento para BPM del usuario
+        const beatVisualizerGame = document.getElementById('beat-visualizer-game');
+        const beatBarsWrapperGame = document.getElementById('beat-bars-wrapper-game');
+        const zoomInGame = document.getElementById('zoom-in-game');
+        const zoomOutGame = document.getElementById('zoom-out-game');
+        const tapToSyncButton = document.getElementById('tap-to-sync-button');
+        const tapSyncFeedback = document.getElementById('tap-sync-feedback');
+
+        // --- Constants and Configuration ---
+        const SUB_BEATS_PER_MAIN_BEAT = 4;
+        const ZOOM_LEVELS = [4, 8, 16, 32];
+        let currentNumMainBeatsDisplayedGame = 8;
+        const TOTAL_GENERATED_SUB_BEATS = 64 * SUB_BEATS_PER_MAIN_BEAT;
+        const MIN_BAR_WIDTH_VISUAL = 1;
+        const MIN_GAP_VISUAL = 0.5;
+        const initialBaseBPMGame = 145; // Matching SCREECHMASTER.mp3 BPM
+
+        // Tap to Sync variables
+        let tapTimes = [];
+        const TAP_WINDOW_MS = 3000; // Time window to consider taps for BPM calculation
+        const MIN_TAPS = 3; // Minimum taps needed to calculate BPM
+        const SYNC_TOLERANCE_BPM = 1.0; // BPM tolerance for successful sync
+
+        // Store animation frame ID for beat visualizer
+        let beatVisualizerAnimationFrameId = null;
+
+        /**
+         * Generates and appends beat bars to the specified wrapper.
+         * @param {HTMLElement} wrapper - The beat bars wrapper element.
+         * @param {number} numMainBeats - The number of main beats to generate.
+         * @param {number} subBeatsPerMainBeat - The number of sub-beats per main beat.
+         * @param {number} wrapperWidth - The width of the beat visualizer container.
+         */
+        function generateBeatBars(wrapper, numMainBeats, subBeatsPerMainBeat, wrapperWidth) {
+            wrapper.innerHTML = ''; // Clear existing bars
+            const totalSubBeats = TOTAL_GENERATED_SUB_BEATS;
+
+            const effectiveWidth = wrapperWidth - (MIN_GAP_VISUAL * (totalSubBeats - 1));
+            let barWidth = Math.max(MIN_BAR_WIDTH_VISUAL, effectiveWidth / totalSubBeats);
+            let gap = MIN_GAP_VISUAL;
+
+            if (barWidth > (wrapperWidth / (totalSubBeats / 2))) {
+                barWidth = (wrapperWidth / (totalSubBeats / 2));
+                gap = (wrapperWidth - (barWidth * totalSubBeats)) / (totalSubBeats - 1);
+            }
+
+            for (let i = 0; i < totalSubBeats; i++) {
+                const beatBar = document.createElement('div');
+                beatBar.classList.add('beat-bar');
+                if (i % subBeatsPerMainBeat === 0) {
+                    beatBar.classList.add('beat-type-kick');
+                } else if (i % (subBeatsPerMainBeat / 2) === 0) {
+                    beatBar.classList.add('beat-type-2');
+                } else {
+                    beatBar.classList.add('beat-type-4');
+                }
+
+                beatBar.style.width = `${barWidth}px`;
+                beatBar.style.marginRight = `${gap}px`;
+
+                wrapper.appendChild(beatBar);
+            }
+        }
+
+        /**
+         * Updates the visual position and highlighting of beat bars, including glow effect.
+         * @param {HTMLAudioElement} audio - The audio element.
+         * @param {HTMLElement} beatBarsWrapper - The wrapper containing the beat bars.
+         * @param {number} currentNumMainBeatsDisplayed - Number of main beats currently displayed.
+         */
+        let lastKickBeatIndex = -1;
+        function updateBeatVisualization(audio, beatBarsWrapper, currentNumMainBeatsDisplayed) {
+            if (beatVisualizerAnimationFrameId) {
+                cancelAnimationFrame(beatVisualizerAnimationFrameId);
+            }
+
+            const currentBPM = parseFloat(gameBPMValue.textContent);
+            const msPerBeat = (60 / currentBPM) * 1000;
+            const msPerSubBeat = msPerBeat / SUB_BEATS_PER_MAIN_BEAT;
+
+            const beatVisualizerWidth = beatBarsWrapper.parentElement.offsetWidth;
+            const totalSubBeats = beatBarsWrapper.children.length;
+
+            let lastTime = 0;
+
+            function animateBeatBars(currentTime) {
+                if (!audio.paused) {
+                    if (!lastTime) lastTime = currentTime;
+                    lastTime = currentTime;
+
+                    const currentAudioTime = audio.currentTime * 1000;
+                    const totalMsDisplayed = (currentNumMainBeatsDisplayed * msPerBeat);
+
+                    const centerOffsetPx = beatVisualizerWidth / 2;
+                    const currentPixelPosition = (currentAudioTime % totalMsDisplayed) * (beatVisualizerWidth / totalMsDisplayed);
+                    const wrapperOffset = centerOffsetPx - currentPixelPosition;
+
+                    beatBarsWrapper.style.transform = `translateX(${wrapperOffset}px)`;
+
+                    const currentSubBeatIndex = Math.floor(currentAudioTime / msPerSubBeat);
+                    const currentMainBeatIndex = Math.floor(currentAudioTime / msPerBeat);
+
+
+                    Array.from(beatBarsWrapper.children).forEach(bar => {
+                        bar.classList.remove('active-beat', 'next-beat');
+                    });
+
+                    const activeBar = beatBarsWrapper.children[currentSubBeatIndex % totalSubBeats];
+                    const nextBar = beatBarsWrapper.children[(currentSubBeatIndex + 1) % totalSubBeats];
+
+                    if (activeBar) {
+                        activeBar.classList.add('active-beat');
+                    }
+                    if (nextBar) {
+                        nextBar.classList.add('next-beat');
+                    }
+
+                    // Beat Glow Logic
+                    if (currentMainBeatIndex !== lastKickBeatIndex) {
+                        if (currentSubBeatIndex % SUB_BEATS_PER_MAIN_BEAT === 0) { // Only glow on kick beats
+                            beatVisualizerGame.classList.remove('glow'); // Reiniciar la animación
+                            void beatVisualizerGame.offsetWidth; // Trigger reflow
+                            beatVisualizerGame.classList.add('glow');
+                            lastKickBeatIndex = currentMainBeatIndex;
+                        }
+                    }
+
+                } else {
+                    lastTime = 0;
+                    beatVisualizerGame.classList.remove('glow'); // Ensure glow is off when paused
+                }
+                beatVisualizerAnimationFrameId = requestAnimationFrame(animateBeatBars);
+            }
+
+            beatVisualizerAnimationFrameId = requestAnimationFrame(animateBeatBars);
+        }
+
+        // Zoom functionality for the game visualizer
+        function applyZoom(direction) {
+            let currentZoomLevelIndex = ZOOM_LEVELS.indexOf(currentNumMainBeatsDisplayedGame);
+
+            if (direction === 'in' && currentZoomLevelIndex < ZOOM_LEVELS.length - 1) {
+                currentZoomLevelIndex++;
+            } else if (direction === 'out' && currentZoomLevelIndex > 0) {
+                currentZoomLevelIndex--;
+            }
+
+            const newNumMainBeatsDisplayed = ZOOM_LEVELS[currentZoomLevelIndex];
+            currentNumMainBeatsDisplayedGame = newNumMainBeatsDisplayed;
+
+            generateBeatBars(beatBarsWrapperGame, TOTAL_GENERATED_SUB_BEATS / SUB_BEATS_PER_MAIN_BEAT, SUB_BEATS_PER_MAIN_BEAT, beatVisualizerGame.offsetWidth);
+            if (!gameAudio.paused) {
+                updateBeatVisualization(gameAudio, beatBarsWrapperGame, newNumMainBeatsDisplayed);
+            }
+        }
+
+        // --- Tap to Sync Functionality ---
+        function handleTapToSync() {
+            const now = performance.now();
+            tapTimes.push(now);
+
+            // Remove taps older than TAP_WINDOW_MS
+            tapTimes = tapTimes.filter(time => now - time < TAP_WINDOW_MS);
+
+            // Add glow to tap button
+            tapToSyncButton.classList.remove('glow');
+            void tapToSyncButton.offsetWidth; // Trigger reflow
+            tapToSyncButton.classList.add('glow');
+
+            if (tapTimes.length >= MIN_TAPS) {
+                // Calculate average interval between taps
+                let totalInterval = 0;
+                for (let i = 0; i < tapTimes.length - 1; i++) {
+                    totalInterval += (tapTimes[i + 1] - tapTimes[i]);
+                }
+                const averageInterval = totalInterval / (tapTimes.length - 1);
+
+                // Calculate BPM from average interval
+                const tappedBPM = 60000 / averageInterval; // 60000 ms in a minute
+
+                // Update user BPM display
+                userTappedBPMValue.textContent = tappedBPM.toFixed(1);
+
+                // Adjust audio playback rate
+                gameAudio.playbackRate = tappedBPM / initialBaseBPMGame;
+
+                // Provide feedback (overlay)
+                tapSyncFeedback.textContent = `BPM: ${tappedBPM.toFixed(1)}`;
+                tapSyncFeedback.classList.add('show');
+                setTimeout(() => {
+                    tapSyncFeedback.classList.remove('show');
+                }, 800); // Hide feedback after 0.8 seconds
+
+                // Visually "snap" the beat visualizer
+                if (!gameAudio.paused) {
+                    updateBeatVisualization(gameAudio, beatBarsWrapperGame, currentNumMainBeatsDisplayedGame);
+                }
+
+                // Check for sync success (optional, for actual game logic)
+                const currentSongBPM = initialBaseBPMGame; // The actual BPM of the song
+                if (Math.abs(tappedBPM - currentSongBPM) <= SYNC_TOLERANCE_BPM) {
+                    console.log("¡Sincronización exitosa!");
+                    // Add game scoring or visual reward here
+                } else {
+                    console.log("Necesitas más taps para sincronizarte mejor.");
+                }
+
+            } else {
+                 userTappedBPMValue.textContent = `--.--`; // Reset user BPM until enough taps
+                 tapSyncFeedback.textContent = `Taps: ${tapTimes.length}`;
+                 tapSyncFeedback.classList.add('show');
+                 setTimeout(() => {
+                     tapSyncFeedback.classList.remove('show');
+                 }, 500);
+            }
+        }
+
+
+        // --- Event Listeners ---
+        playPauseGame.addEventListener('click', () => {
+            if (gameAudio.paused) {
+                gameAudio.play();
+                playPauseGame.innerHTML = '⏸️ PAUSE';
+                // Reset tap times on play/pause
+                tapTimes = [];
+                userTappedBPMValue.textContent = '--.--'; // Clear user BPM on play
+                // Start beat visualization
+                updateBeatVisualization(gameAudio, beatBarsWrapperGame, currentNumMainBeatsDisplayedGame);
+            } else {
+                gameAudio.pause();
+                playPauseGame.innerHTML = '▶️ PLAY';
+                // Stop beat visualization
+                if (beatVisualizerAnimationFrameId) {
+                    cancelAnimationFrame(beatVisualizerAnimationFrameId);
+                }
+            }
+        });
+
+        zoomInGame.addEventListener('click', () => applyZoom('in'));
+        zoomOutGame.addEventListener('click', () => applyZoom('out'));
+
+        tapToSyncButton.addEventListener('click', handleTapToSync);
+
+        // Initial setup calls
+        gameBPMValue.textContent = initialBaseBPMGame.toFixed(1); // Set initial song BPM display
+        const initialVisualizerWidthGame = beatVisualizerGame.offsetWidth || 300;
+        generateBeatBars(beatBarsWrapperGame, TOTAL_GENERATED_SUB_BEATS / SUB_BEATS_PER_MAIN_BEAT, SUB_BEATS_PER_MAIN_BEAT, initialVisualizerWidthGame);
+
+    </script>
+</body>
+</html>
