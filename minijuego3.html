@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BPM Guessing Game</title>
+    <style>
+        /* Basic Reset & Body Styles */
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* Full viewport height */
+            background-color: #1a1a1a; /* Dark background for the outside of the app */
+            font-family: 'Arial', sans-serif; /* A sensible default font */
+            -webkit-font-smoothing: antialiased; /* Smoother fonts for webkit browsers */
+            -moz-osx-osx-font-smoothing: grayscale; /* Smoother fonts for firefox */
+            box-sizing: border-box; /* Ensures padding/border are included in element's total width and height */
+        }
+
+        /* Overall Structure: The Main Container */
+        .dj-app-container {
+            width: 375px; /* Specified width */
+            height: 650px; /* Specified height */
+            background-color: #2F3642; /* A dark slate-grey/blue */
+            border-radius: 20px; /* Softly rounded corners for the app window */
+            overflow: hidden; /* Ensures child elements respect the rounded corners */
+            display: flex;
+            flex-direction: column; /* Stacks content vertically */
+            padding: 15px; /* Internal padding from the edges */
+            box-sizing: border-box; /* Includes padding in the width/height */
+            color: #FFFFFF; /* Default text color */
+            position: relative; /* Essential for absolutely positioned children like the large circle */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); /* Subtle shadow for depth */
+        }
+
+        /* 1. Top Bar Elements */
+        .top-bar {
+            display: flex;
+            justify-content: space-between; /* Pushes elements to opposite ends */
+            align-items: center; /* Vertically aligns items in the middle */
+            width: 100%; /* Fills the width of the parent (after padding) */
+            height: 40px; /* Estimated height */
+            margin-bottom: 15px; /* Space below the top bar */
+        }
+
+        .close-button {
+            background: none;
+            border: none;
+            color: #FFFFFF; /* White 'X' */
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1; /* Ensures 'X' is vertically centered */
+            outline: none; /* Remove focus outline */
+        }
+
+        .progress-bar {
+            width: 180px; /* Estimated width of the bar */
+            height: 10px; /* Height of the bar */
+            background-color: rgba(255, 255, 255, 0.2); /* Light translucent background for the empty part */
+            border-radius: 5px; /* Rounded ends */
+            overflow: hidden; /* To contain the fill */
+        }
+
+        .progress-fill {
+            width: 0%; /* Starts at 0% - will be updated by JS */
+            height: 100%;
+            background: linear-gradient(to right, #4CAF50, #8BC34A); /* Green gradient */
+            border-radius: 5px; /* Inherits rounded corners if parent has overflow hidden */
+            transition: width 0.3s ease-out; /* Smooth transition for progress */
+        }
+
+        /* 2. "QUE BPM TIENE LA CANCION?" Label */
+        .rhythm-label-container {
+            width: fit-content; /* Width adapts to content */
+            padding: 8px 18px; /* Vertical and horizontal padding */
+            background-color: rgba(60, 150, 200, 0.2); /* Translucent blue background */
+            border: 1px solid #7ED7EA; /* Light blue border */
+            border-radius: 20px; /* Achieves the pill shape */
+            margin: 0 auto 15px auto; /* Centers horizontally, provides space below */
+            box-sizing: border-box;
+        }
+
+        .rhythm-text {
+            color: #FFFFFF; /* White text */
+            font-size: 16px;
+            font-weight: bold;
+            letter-spacing: 1px; /* Spaced out letters */
+            text-transform: uppercase; /* All caps */
+        }
+
+        /* 3. Main Content Area (Layout for Tracks and Controls) */
+        .main-content-area {
+            display: flex;
+            width: 100%;
+            flex-grow: 1; /* Takes remaining vertical space */
+            gap: 15px; /* Space between left and right columns */
+            align-items: flex-start; /* Align columns to the top */
+            padding-bottom: 15px; /* Padding for the bottom edge of content before main slider */
+        }
+
+        .left-column {
+            display: flex;
+            flex-direction: column;
+            flex: 3; /* Takes more width for tracks */
+            /* NEW: For vertical positioning match with slider */
+            position: relative;
+            height: 250px; /* Match the height of the vertical slider container */
+            align-items: flex-start; /* Align elements to the left within the column */
+        }
+
+        .right-column {
+            display: flex;
+            flex-direction: column; /* Stacks controls vertically */
+            flex: 1.5; /* Takes less width for controls */
+            align-items: center; /* Center controls horizontally within their column */
+            gap: 15px; /* Space between controls */
+            flex-grow: 1; /* Allow right column to grow and push submit button to bottom */
+            justify-content: space-between; /* Distribute space between items */
+        }
+
+        /* 4. Individual Track Elements (Left Column) */
+        .track-element-container {
+            display: flex;
+            align-items: center;
+            background-color: rgba(255, 255, 255, 0.1); /* Slightly translucent background */
+            backdrop-filter: blur(5px) saturate(1.2); /* Frosted effect */
+            -webkit-backdrop-filter: blur(5px) saturate(1.2);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 8px;
+            height: 60px; /* Estimated height for each track element */
+            box-sizing: border-box;
+            position: absolute; /* NEW: Absolute positioning for vertical alignment */
+            width: 90%; /* Adjust width to fit */
+            left: 5%; /* Center horizontally */
+            cursor: pointer;
+        }
+
+        .play-button-small {
+            background-color: rgba(255, 255, 255, 0.2); /* Translucent background */
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            color: #FFFFFF;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%; /* Circular button */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            cursor: pointer;
+            margin-right: 10px;
+            outline: none;
+            flex-shrink: 0; /* Prevent it from shrinking */
+        }
+
+        .waveform-track {
+            flex-grow: 1; /* Takes remaining space in the container */
+            height: 40px; /* Height of the waveform visual */
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: contain;
+        }
+
+        .purple-blue-waveform {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20" preserveAspectRatio="none"><path fill="url(#grad)" d="M0 10 L5 8 L10 12 L15 7 L20 13 L25 6 L30 14 L35 5 L40 15 L45 4 L50 16 L55 3 L60 17 L65 2 L70 18 L75 1 L80 19 L85 0 L90 20 L95 10 L100 10 Z" /><defs><linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:rgb(150,100,250);stop-opacity:1" /><stop offset="100%" style="stop-color:rgb(100,150,250);stop-opacity:1" /></linearGradient></defs></svg>');
+        }
+
+        .red-waveform-track {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20" preserveAspectRatio="none"><path fill="red" d="M0 10 L5 12 L10 8 L15 13 L20 7 L25 14 L30 6 L35 15 L40 5 L45 16 L50 4 L55 17 L60 3 L65 18 L70 2 L75 19 L80 1 L85 20 L90 10 L95 10 L100 10 Z" /></svg>');
+        }
+
+        .track-bpm-display {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(0, 0, 0, 0.4);
+            padding: 4px 8px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #FFFFFF;
+        }
+
+        /* 5. Vertical Slider (Right Column) */
+        .vertical-slider-container {
+            height: 250px; /* Estimated height for the vertical slider */
+            width: 30px; /* Width for the container */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative; /* For the markings if desired */
+        }
+
+        .vertical-slider {
+            -webkit-appearance: none;
+            width: 250px; /* This is the length of the slider */
+            height: 10px; /* This is the thickness of the track */
+            background: #3C424D; /* Dark grey track */
+            border-radius: 5px;
+            outline: none;
+            opacity: 1;
+            transition: opacity .2s;
+            transform: rotate(270deg); /* Rotate to make it vertical */
+            transform-origin: center; /* Rotate around its center */
+            position: absolute;
+        }
+
+        .vertical-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px; /* Width of the thumb */
+            height: 35px; /* Height of the thumb */
+            background: #FFD700; /* Yellow/gold color for the thumb */
+            border-radius: 5px; /* Rounded rectangle */
+            cursor: pointer;
+            border: 2px solid #FFFFFF; /* White border around thumb */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .vertical-slider::-moz-range-thumb {
+            width: 25px;
+            height: 35px;
+            background: #FFD700;
+            border-radius: 5px;
+            cursor: pointer;
+            border: 2px solid #FFFFFF;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .vertical-slider::-webkit-slider-runnable-track {
+            background: linear-gradient(to top, #98FB98, #4CAF50); /* Green gradient for the track */
+            height: 10px;
+            border-radius: 5px;
+        }
+
+        .vertical-slider::-moz-range-track {
+            background: linear-gradient(to top, #98FB98, #4CAF50);
+            height: 10px;
+            border-radius: 5px;
+        }
+
+        /* 6. BPM/SYNC Display (Right Column) */
+        .bpm-sync-panel {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px) saturate(1.2);
+            -webkit-backdrop-filter: blur(5px) saturate(1.2);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            box-sizing: border-box;
+            width: fit-content;
+            position: relative;
+        }
+
+        .bpm-sync-panel .bpm-label {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+            font-weight: normal;
+        }
+
+        .bpm-sync-panel .bpm-value {
+            color: #FFFFFF;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .bpm-sync-panel .sync-status {
+            width: 38px;
+            height: 18px;
+            background-color: #555;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #FFFFFF;
+        }
+
+        /* BPM Pulse Indicator for the Slider's BPM */
+        .bpm-pulse-indicator {
+            width: 10px;
+            height: 10px;
+            background-color: #7ED7EA;
+            border-radius: 50%;
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: 0 0 5px #7ED7EA;
+            opacity: 0;
+        }
+
+        /* 7. Small Play/Stop Circle (Right Column) & Submit Button Row */
+        .control-buttons-row {
+            display: flex;
+            gap: 15px; /* Space between buttons */
+            align-items: center;
+            /* Removed margin-top: auto; as justify-content: space-between on right-column handles distribution */
+        }
+
+        .play-stop-circle {
+            width: 60px;
+            height: 60px;
+            background-color: rgba(255, 215, 0, 0.3);
+            border: 2px solid #FFD700;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #FFFFFF;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+            flex-shrink: 0;
+        }
+
+        /* Submit Answer Button Style */
+        .submit-button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            outline: none;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+
+        .submit-button:hover {
+            background-color: #689f38;
+            transform: translateY(-2px);
+        }
+
+        .submit-button:active {
+            background-color: #388e3c;
+            transform: translateY(0);
+        }
+
+        /* Animation for pulsing */
+        @keyframes pulse-opacity {
+            0% { opacity: 0.2; }
+            50% { opacity: 1; }
+            100% { opacity: 0.2; }
+        }
+
+        .is-pulsing {
+            animation-name: pulse-opacity;
+            animation-iteration-count: infinite;
+            animation-timing-function: linear;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dj-app-container">
+        <div class="top-bar">
+            <button class="close-button">X</button>
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+            </div>
+        </div>
+
+        <div class="rhythm-label-container">
+            <span class="rhythm-text">QUE BPM TIENE LA CANCION?</span>
+        </div>
+
+        <div class="main-content-area">
+            <div class="left-column" id="left-column">
+                <div class="track-element-container" data-bpm="190">
+                    <button class="play-button-small">►</button>
+                    <div class="waveform-track red-waveform-track"></div>
+                    <span class="track-bpm-display">190 BPM</span>
+                    <audio src="https://www.learningcontainer.com/wp-content/uploads/2020/02/sample-mp3-file.mp3" preload="auto"></audio>
+                </div>
+                <div class="track-element-container" data-bpm="150">
+                    <button class="play-button-small">►</button>
+                    <div class="waveform-track purple-blue-waveform"></div>
+                    <span class="track-bpm-display">150 BPM</span>
+                    <audio src="https://www.learningcontainer.com/wp-content/uploads/2020/02/Kalimba.mp3" preload="auto"></audio>
+                </div>
+                <div class="track-element-container" data-bpm="115">
+                    <button class="play-button-small">►</button>
+                    <div class="waveform-track red-waveform-track"></div>
+                    <span class="track-bpm-display">115 BPM</span>
+                    <audio src="https://raw.githubusercontent.com/DjLess/MP3_repo/main/Somewhere%20Over%20The%20Rainbow%20-%20Polizzi%20Vs%20Richter%20(%20Israel%20IZ%20Techno%20Bootleg).mp3" preload="auto"></audio>
+                </div>
+            </div>
+
+            <div class="right-column">
+                <div class="vertical-slider-container">
+                    <input type="range" min="110" max="195" value="120" class="vertical-slider" id="bpm-slider">
+                </div>
+
+                <div class="bpm-sync-panel">
+                    <span class="bpm-label">BPM</span>
+                    <span class="bpm-value" id="current-bpm-display">120.0</span>
+                    <div class="sync-status" style="background-color: #555;">GUESS</div>
+                    <div class="bpm-pulse-indicator" id="slider-bpm-pulse"></div>
+                </div>
+
+                <div class="control-buttons-row">
+                    <button class="submit-button" id="submit-answer-button">SUBMIT ANSWER</button>
+                    <div class="play-stop-circle" id="question-song-toggle">
+                        ► ■
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <audio id="question-song" src="https://raw.githubusercontent.com/DjLess/MP3_repo/main/SCREECHMASTER.mp3" preload="auto" data-actual-bpm="130"></audio>
+
+    <script>
+        const bpmSlider = document.getElementById('bpm-slider');
+        const currentBpmDisplay = document.getElementById('current-bpm-display');
+        const questionSongToggle = document.getElementById('question-song-toggle');
+        const questionSongAudio = document.getElementById('question-song');
+        const referenceTrackContainers = document.querySelectorAll('.track-element-container');
+        const progressBarFill = document.querySelector('.progress-fill');
+        const submitAnswerButton = document.getElementById('submit-answer-button');
+        const sliderBpmPulseIndicator = document.getElementById('slider-bpm-pulse');
+        const leftColumn = document.getElementById('left-column');
+
+        // UPDATED: Slider BPM range constants
+        const SLIDER_MIN_BPM = 110;
+        const SLIDER_MAX_BPM = 195;
+        const SLIDER_RANGE = SLIDER_MAX_BPM - SLIDER_MIN_BPM;
+        const SLIDER_HEIGHT = 250; // Height of .vertical-slider-container
+        const TRACK_ELEMENT_HEIGHT = 60; // Height of .track-element-container
+
+        let currentReferenceAudio = null;
+
+        // Function to start pulsing an element at a given BPM
+        function startPulsing(element, bpm) {
+            stopPulsing(element); // Stop any existing pulse first
+
+            if (bpm <= 0) return;
+
+            const intervalMs = (60 * 1000) / bpm; // Milliseconds per beat
+            element.style.animationDuration = `${intervalMs}ms`;
+            element.classList.add('is-pulsing');
+        }
+
+        // Function to stop pulsing an element
+        function stopPulsing(element) {
+            element.classList.remove('is-pulsing');
+            element.style.animationDuration = '';
+        }
+
+        // Function to position track elements based on their BPM
+        function positionTrackElements() {
+            referenceTrackContainers.forEach(container => {
+                const bpm = parseFloat(container.dataset.bpm);
+                // Calculate position relative to the slider's range
+                // Higher BPMs should be closer to the top of the column
+                // (SLIDER_MAX_BPM - bpm) normalizes to 0 at max BPM, and SLIDER_RANGE at min BPM
+                const normalizedBpm = (SLIDER_MAX_BPM - bpm) / SLIDER_RANGE;
+                
+                // Calculate pixel position. This aims to place the top of the element.
+                // To make the center of the track align with the corresponding BPM on the slider,
+                // we adjust by half the track element's height.
+                const topPx = normalizedBpm * (SLIDER_HEIGHT - TRACK_ELEMENT_HEIGHT) + (TRACK_ELEMENT_HEIGHT / 2); // Adjust for centering
+                container.style.top = `${topPx - (TRACK_ELEMENT_HEIGHT / 2)}px`; // Adjust back to make top relative to calculated point
+            });
+        }
+
+        // Update BPM display and start/restart slider BPM pulse when slider moves
+        bpmSlider.addEventListener('input', () => {
+            const guessedBPM = parseFloat(bpmSlider.value);
+            currentBpmDisplay.textContent = guessedBPM.toFixed(1);
+            startPulsing(sliderBpmPulseIndicator, guessedBPM);
+        });
+
+        // Toggle play/pause for the question song
+        questionSongToggle.addEventListener('click', () => {
+            const actualBPM = parseFloat(questionSongAudio.dataset.actualBpm);
+
+            if (questionSongAudio.paused) {
+                if (currentReferenceAudio) {
+                    currentReferenceAudio.pause();
+                    referenceTrackContainers.forEach(otherContainer => {
+                        const otherPlayButton = otherContainer.querySelector('.play-button-small');
+                        const otherWaveformTrack = otherContainer.querySelector('.waveform-track');
+                        otherPlayButton.textContent = '►';
+                        stopPulsing(otherPlayButton);
+                        stopPulsing(otherWaveformTrack);
+                    });
+                    currentReferenceAudio = null;
+                }
+                questionSongAudio.play();
+                questionSongToggle.innerHTML = '■';
+                startPulsing(questionSongToggle, actualBPM);
+            } else {
+                questionSongAudio.pause();
+                questionSongToggle.innerHTML = '► ■';
+                stopPulsing(questionSongToggle);
+            }
+        });
+
+        // Event listeners for reference tracks
+        referenceTrackContainers.forEach(container => {
+            const playButton = container.querySelector('.play-button-small');
+            const audio = container.querySelector('audio');
+            const bpm = parseFloat(container.dataset.bpm);
+            const waveformTrack = container.querySelector('.waveform-track');
+
+            playButton.addEventListener('click', (event) => {
+                event.stopPropagation();
+
+                if (!questionSongAudio.paused) {
+                    questionSongAudio.pause();
+                    questionSongToggle.innerHTML = '► ■';
+                    stopPulsing(questionSongToggle);
+                }
+
+                if (currentReferenceAudio && currentReferenceAudio !== audio) {
+                    currentReferenceAudio.pause();
+                    referenceTrackContainers.forEach(otherContainer => {
+                        if (otherContainer.querySelector('audio') === currentReferenceAudio) {
+                            const otherPlayButton = otherContainer.querySelector('.play-button-small');
+                            const otherWaveformTrack = otherContainer.querySelector('.waveform-track');
+                            otherPlayButton.textContent = '►';
+                            stopPulsing(otherPlayButton);
+                            stopPulsing(otherWaveformTrack);
+                        }
+                    });
+                }
+
+                if (audio.paused) {
+                    audio.play();
+                    playButton.textContent = '■';
+                    currentReferenceAudio = audio;
+                    startPulsing(playButton, bpm);
+                    startPulsing(waveformTrack, bpm);
+                } else {
+                    audio.pause();
+                    playButton.textContent = '►';
+                    currentReferenceAudio = null;
+                    stopPulsing(playButton);
+                    stopPulsing(waveformTrack);
+                }
+            });
+
+            audio.addEventListener('ended', () => {
+                playButton.textContent = '►';
+                currentReferenceAudio = null;
+                stopPulsing(playButton);
+                stopPulsing(waveformTrack);
+            });
+
+            questionSongAudio.addEventListener('timeupdate', () => {
+                const progress = (questionSongAudio.currentTime / questionSongAudio.duration) * 100;
+                progressBarFill.style.width = `${progress}%`;
+            });
+            questionSongAudio.addEventListener('ended', () => {
+                progressBarFill.style.width = '0%';
+            });
+        });
+
+        // Submit Answer Button Logic
+        submitAnswerButton.addEventListener('click', () => {
+            const guessedBPM = parseFloat(bpmSlider.value);
+            const actualBPM = parseFloat(questionSongAudio.dataset.actualBpm);
+
+            console.log("User submitted BPM:", guessedBPM);
+            console.log("Actual BPM:", actualBPM);
+
+            const difference = Math.abs(guessedBPM - actualBPM);
+            let feedback = "";
+            if (difference < 3) {
+                feedback = `¡Excelente! Tu estimación de ${guessedBPM} BPM está muy cerca del BPM real de ${actualBPM}.`;
+            } else if (difference < 10) {
+                feedback = `¡Buen intento! Tu estimación de ${guessedBPM} BPM está cerca. El BPM real era ${actualBPM}.`;
+            } else {
+                feedback = `¡Sigue practicando! Tu estimación de ${guessedBPM} BPM es bastante diferente. El BPM real era ${actualBPM}.`;
+            }
+            alert(feedback);
+
+            // Stop all audio and pulsing after submission
+            questionSongAudio.pause();
+            questionSongToggle.innerHTML = '► ■';
+            stopPulsing(questionSongToggle);
+            progressBarFill.style.width = '0%';
+
+            if (currentReferenceAudio) {
+                currentReferenceAudio.pause();
+                referenceTrackContainers.forEach(container => {
+                    const playButton = container.querySelector('.play-button-small');
+                    const waveformTrack = container.querySelector('.waveform-track');
+                    playButton.textContent = '►';
+                    stopPulsing(playButton);
+                    stopPulsing(waveformTrack);
+                });
+                currentReferenceAudio = null;
+            }
+            stopPulsing(sliderBpmPulseIndicator);
+        });
+
+        // Initial setup calls
+        positionTrackElements(); // Position tracks when script loads
+        const initialBPM = parseFloat(bpmSlider.value);
+        currentBpmDisplay.textContent = initialBPM.toFixed(1);
+        startPulsing(sliderBpmPulseIndicator, initialBPM);
+    </script>
+
+</body>
+</html>
