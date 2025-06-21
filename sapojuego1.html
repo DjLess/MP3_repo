@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DJ App Mockup con Plataformer Minijuego</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif; /* Using Inter font */
+            background-color: #1a202c; /* Fondo oscuro para el body */
+            color: #e2e8f0; /* Color de texto claro */
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* Ocupa al menos el 100% de la altura de la ventana */
+            overflow: hidden; /* Prevent scrollbars */
+        }
+        /* Estilos base del frame del teléfono */
+        .phone-frame {
+            width: 375px;
+            height: 700px;
+            background-color: #1a202c;
+            border-radius: 40px;
+            box-shadow: 0 0 0 8px #2d3748,
+                                 0 0 0 12px #1a202c,
+                                 0 20px 50px rgba(0, 0, 0, 0.7);
+            position: relative;
+            overflow: hidden;
+            flex-direction: column;
+            padding-bottom: 50px;
+            display: flex; /* Ensure flex for internal layout */
+        }
+
+        .notch {
+            width: 120px;
+            height: 25px;
+            background-color: #1a202c;
+            border-bottom-left-radius: 15px;
+            border-bottom-right-radius: 15px;
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+        }
+
+        /* Estilos de la onda de audio (simulada) */
+        .waveform {
+            height: 40px;
+            background: repeating-linear-gradient(90deg,
+                #2d3748 0%, #2d3748 5%,
+                #4a5568 5%, #4a5568 10%,
+                #2d3748 10%, #2d3748 15%,
+                #4a5568 15%, #4a5568 20%,
+                #2d3748 20%, #2d3748 25%,
+                #4a5568 25%, #4a5568 30%,
+                #2d3748 30%, #2d3748 35%,
+                #4a5568 35%, #4a5568 40%,
+                #2d3748 40%, #2d3748 45%,
+                #4a5568 45%, #4a5568 50%
+            );
+            background-size: 200px 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            flex-grow: 1;
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.5);
+        }
+
+        .waveform.red {
+            background: repeating-linear-gradient(90deg,
+                #374151 0%, #374151 5%,
+                #4b5563 5%, #4b5563 10%,
+                #374151 10%, #374151 15%,
+                #4b5563 15%, #4b5563 20%,
+                #374151 20%, #374151 25%,
+                #4b5563 25%, #4b5563 30%,
+                #374151 30%, #374151 35%,
+                #4b5563 35%, #4b5563 40%,
+                #374151 40%, #374151 45%,
+                #4b5563 45%, #4b5563 50%
+            );
+            background-size: 200px 100%;
+        }
+
+        .waveform-progress {
+            height: 100%;
+            background-color: rgba(66, 153, 225, 0.7);
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 0%;
+            transition: width 0.1s linear;
+            border-radius: 8px;
+        }
+
+        /* Estilos del jog wheel */
+        .jog-wheel {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: 4px solid #4a5568;
+            background-color: #2d3748;
+            cursor: grab;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.6);
+            /* Removed transition here, handled by JS requestAnimationFrame for smoothness */
+            z-index: 10;
+        }
+
+        .jog-wheel:active {
+            cursor: grabbing;
+        }
+
+        /* NEW: Styles for the SVG trace */
+        .jog-trace-svg {
+            position: absolute; /* Position it relative to jog-wheel */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg); /* Rotate SVG to start trace at top */
+            filter: drop-shadow(0 0 5px rgba(255,255,255,0.7)); /* Glow effect */
+        }
+
+        /* Removed old .jog-indicator and @keyframes throb */
+
+        /* Estilos del contenedor del visualizador de kick */
+        .kick-visualizer-container {
+            width: 100px;
+            height: 40px;
+            border-radius: 10px;
+            background-color: #374151;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .kick-pulse-element {
+            width: 40px;
+            height: 40px;
+            background-color: #4299e1;
+            border-radius: 5px;
+            opacity: 0;
+            transform: scale(0.5);
+            transition: opacity 0.05s ease-out, transform 0.05s ease-out;
+        }
+
+        .kick-pulse-element.active {
+            transform: scale(1.1);
+            opacity: 1;
+        }
+
+        /* Indicador de kicks sincronizados */
+        #synced-kicks-indicator {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(74, 222, 128, 0.8);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+            z-index: 30;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        #synced-kicks-indicator.active {
+            opacity: 1;
+        }
+
+        /* Estilo para el botón de debug */
+        #debug-play-all {
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #6b7280;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 50;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.2s ease-in-out;
+        }
+
+        #debug-play-all:hover {
+            background-color: #4a5568;
+        }
+
+        /* Estilo para los sliders verticales (BPM faders) */
+        .vertical-fader {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 150px;
+            height: 12px;
+            background: #4a5568;
+            outline: none;
+            border-radius: 6px;
+            z-index: 1;
+            transform: rotate(-90deg);
+            transform-origin: center;
+            margin: 0;
+        }
+
+        .vertical-fader::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 30px;
+            height: 20px;
+            background: #63b3ed;
+            border-radius: 4px;
+            cursor: grab;
+            border: 2px solid #a0aec0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .vertical-fader::-moz-range-thumb {
+            width: 30px;
+            height: 20px;
+            background: #63b3ed;
+            border-radius: 4px;
+            cursor: grab;
+            border: 2px solid #a0aec0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        /* Adjusted styles for elements that were in fader-group-abs, now individual */
+       .bpm-label-abs { /* New class for the BPM text element */
+            font-size: 0.875rem; /* text-sm */
+            font-weight: 600;
+            color: #90cdf4;
+            /* margin-bottom: 4px; */ /* Removed as individual positioning */
+        }
+
+        .bpm-value {
+            font-size: 1.125rem; /* text-lg */
+            /* margin-bottom: 8px; */ /* Removed as individual positioning */
+        }
+
+        .play-button, .cue-button {
+            padding: 8px 12px;
+            font-size: 0.875rem;
+            border-radius: 9999px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: background-color 0.2s ease-in-out;
+            width: 90px;
+            text-align: center;
+        }
+        .play-button {
+            background-color: #63b3ed;
+            color: white;
+        }
+        .play-button:hover {
+            background-color: #4299e1;
+        }
+
+        .cue-button {
+            background-color: #f6ad55;
+            color: white;
+        }
+        .cue-button:hover {
+            background-color: #ed8936;
+        }
+
+        /* Styles for Crossfader */
+        .crossfader-container {
+            width: 100%;
+            padding: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .crossfader-container input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            max-width: 250px;
+            height: 10px;
+            background: #4a5568;
+            outline: none;
+            border-radius: 5px;
+        }
+
+        .crossfader-container input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            background: #63b3ed;
+            border-radius: 50%;
+            cursor: grab;
+            border: 2px solid #a0aec0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .crossfader-container input[type="range"]::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            background: #63b3ed;
+            border-radius: 50%;
+            cursor: grab;
+            border: 2px solid #a0aec0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        /* NUEVOS ESTILOS PARA LA VISUALIZACIÓN DE BEATS */
+        .beat-visualization-container {
+            width: 300px;
+            height: 50px;
+            background-color: #2d3748;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            align-items: center;
+            padding: 0;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+            z-index: 5;
+            justify-content: center;
+            transition: box-shadow 0.1s ease-out; /* Add transition for smooth glow */
+        }
+
+        .beat-visualization-container.glow-left {
+            box-shadow: 0 0 25px 5px rgba(229, 62, 62, var(--glow-intensity-left, 0)); /* Blue glow for left */
+        }
+
+        .beat-visualization-container.glow-right {
+            box-shadow: 0 0 25px 5px rgba(66, 153, 225, var(--glow-intensity-right, 0)); /* Red glow for right */
+        }
+
+        .beat-bars-wrapper {
+            display: flex;
+            height: 100%;
+            align-items: center;
+            will-change: transform;
+        }
+
+        .beat-bar {
+            border-radius: 3px;
+            opacity: 0.5;
+            transition: background-color 0.1s ease-out, opacity 0.1s ease-out, transform 0.1s ease-out, height 0.1s ease-out;
+            flex-shrink: 0;
+            margin: 0 1px;
+        }
+
+        .beat-bar.beat-type-kick {
+            background-color: #4299e1;
+            height: 35px;
+            transform: scale(1.0);
+        }
+
+        .beat-bar.beat-type-2,
+        .beat-bar.beat-type-3,
+        .beat-bar.beat-type-4 {
+            background-color: #a0aec0;
+            height: 25px;
+            transform: scale(0.7);
+        }
+
+        .beat-bar.active-beat {
+            background-color: #e53e3e;
+            opacity: 1;
+            transform: scale(1.3);
+            height: 40px;
+        }
+
+        .beat-bar.next-beat {
+            background-color: #f6e05e;
+            opacity: 0.9;
+            transform: scale(1.1);
+            height: 30px;
+        }
+
+        .line-indicator {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            height: 100%;
+            width: 2px;
+            background-color: #e53e3e;
+            z-index: 10;
+            box-shadow: 0 0 5px rgba(229, 62, 62, 0.7);
+        }
+
+        /* Styles for zoom buttons */
+        .zoom-buttons {
+            display: flex;
+            gap: 5px;
+        }
+
+        .zoom-button {
+            background-color: #4a5568;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+
+        .zoom-button:hover {
+            background-color: #2d3748;
+        }
+
+        /* NEW: Visualization Frame Styles */
+        .visualization-frame {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 50%; /* Changed from 100% to 50% */
+            background-color: rgba(26, 32, 44, 0.95); /* Semi-transparent dark background */
+            z-index: 40; /* Above most elements, below notch and indicator */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center; /* Keeps content centered vertically within the 50% height */
+            color: #cbd5e0; /* Light text color */
+            font-size: 1.2rem;
+            font-weight: bold;
+            backdrop-filter: blur(5px); /* Optional: blur effect */
+            transition: opacity 0.3s ease-in-out;
+            opacity: 0;
+            pointer-events: none; /* Allows clicks to pass through when hidden */
+        }
+
+        .visualization-frame.active {
+            opacity: 1;
+            pointer-events: auto; /* Re-enable clicks when active */
+        }
+
+        /* Minigame CSS - Platform Game */
+        #platform-game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px; /* Reduced gap */
+            padding: 10px; /* Reduced padding */
+            background-color: #2d3748; /* Darker background for minigame container */
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5); /* Stronger shadow */
+            width: 90%; /* Adjust width to fit phone frame */
+            max-width: 320px; /* Max width to fit in phone frame */
+            height: 90%;
+            max-height: 400px; /* Max height for minigame area */
+        }
+
+        #platform-game-area {
+            position: relative;
+            width: 100%; /* Fill parent container */
+            flex-grow: 1; /* Take available space */
+            background-color: #87ceeb; /* Sky Blue */
+            border: 2px solid #4682b4; /* Steel Blue */
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.5);
+        }
+
+        #platformGameCanvas {
+            background-color: transparent; /* Canvas will draw elements, area has background */
+            width: 100%;
+            height: 100%;
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        #game-ball {
+            position: absolute;
+            width: 20px; /* 2 * radius */
+            height: 20px; /* 2 * radius */
+            background-color: #FFD700; /* Gold */
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(246, 224, 94, 0.7);
+            bottom: 0; /* Positioned by JS */
+            left: 50%; /* Center horizontally */
+            transform: translateX(-50%);
+            z-index: 10; /* Ensure ball is above platforms */
+        }
+
+        .minigame-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .minigame-control-button {
+            padding: 8px 15px; /* Smaller padding for better fit */
+            background-color: #63b3ed; /* Blue */
+            color: white;
+            border-radius: 6px; /* Slightly smaller radius */
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: 0 3px #4299e1; /* Darker blue shadow */
+        }
+
+        .minigame-control-button:active {
+            background-color: #4299e1;
+            transform: translateY(2px);
+            box-shadow: 0 1px #4299e1;
+        }
+
+        #minigameMessageBox { /* New ID for minigame specific message box */
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            text-align: center;
+            z-index: 1001; /* Above game elements */
+            display: none;
+            font-size: 1.2em;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            width: 80%;
+        }
+
+    </style>
+
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="notch"></div>
+
+        <div class="bg-gray-900 text-gray-100 font-inter flex flex-col items-center justify-start w-full h-full">
+            <div class="relative w-full p-4 flex items-center justify-between z-10">
+                <button class="text-gray-400 hover:text-white text-2xl font-bold">X</button>
+                <div class="h-4 bg-green-500 rounded-full w-3/4 mx-auto"></div>
+            </div>
+
+
+
+
+        </div>
+
+        <div id="synced-kicks-indicator" class="absolute" style="top: 100px; left: 50%; transform: translateX(-50%);">¡Kicks Sincronizados!</div>
+
+        <div id="jog-wheel-1" class="jog-wheel absolute" style="top: 350px; left: -70px;">
+            <svg class="jog-trace-svg" viewBox="0 0 200 200">
+                <defs>
+                    <linearGradient id="gradientTrace" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:rgba(255,255,255,0.0)" />
+                        <stop offset="30%" style="stop-color:rgba(255,255,255,0.7)" />
+                        <stop offset="70%" style="stop-color:rgba(255,255,255,0.7)" />
+                        <stop offset="100%" style="stop-color:rgba(255,255,255,0.0)" />
+                    </linearGradient>
+                </defs>
+                <circle id="jog-trace-circle-1" cx="100" cy="100" r="90" fill="none" stroke="url(#gradientTrace)" stroke-width="10" stroke-linecap="round"></circle>
+            </svg>
+        </div>
+        <div id="jog-wheel-2" class="jog-wheel absolute" style="top: 350px; right: -70px;">
+            <svg class="jog-trace-svg" viewBox="0 0 200 200">
+                <defs>
+                    <linearGradient id="gradientTrace" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:rgba(255,255,255,0.0)" />
+                        <stop offset="30%" style="stop-color:rgba(255,255,255,0.7)" />
+                        <stop offset="70%" style="stop-color:rgba(255,255,255,0.7)" />
+                        <stop offset="100%" style="stop-color:rgba(255,255,255,0.0)" />
+                    </linearGradient>
+                </defs>
+                <circle id="jog-trace-circle-2" cx="100" cy="100" r="90" fill="none" stroke="url(#gradientTrace)" stroke-width="10" stroke-linecap="round"></circle>
+            </svg>
+        </div>
+
+        <div id="beat-visualizer-1" class="beat-visualization-container absolute" style="top: 180px; left: 35px;">
+            <div class="line-indicator"></div>
+            <div id="beat-bars-wrapper-1" class="beat-bars-wrapper"></div>
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-r-md z-20">C1</div>
+        </div>
+        <div class="zoom-buttons absolute" style="top: 130px; left: 35px;">
+            <button id="zoom-out-1" class="zoom-button">-</button>
+            <button id="zoom-in-1" class="zoom-button">+</button>
+        </div>
+       
+        <h2 class="text-sm font-semibold text-blue-300 bpm-label-abs absolute" style="top: 80px; left: 45px;">BPM: <span id="bpm-value-1" class="bpm-value">145.0</span></h2>
+        <button id="sync-1" class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold py-1 px-2 rounded-md shadow-lg transition-all duration-200 absolute" style="top: 480px; left: 55px;">
+            SYNC
+        </button>
+        <input type="range" id="bpm-slider-1" class="vertical-fader absolute" style="top: 440px; left: 80px; transform: rotate(-90deg);">
+
+
+        <div id="beat-visualizer-2" class="beat-visualization-container absolute" style="top: 250px; left: 35px;">
+            <div class="line-indicator"></div>
+            <div id="beat-bars-wrapper-2" class="beat-bars-wrapper"></div>
+            <div class="absolute right-0 top-1/2 -translate-y-1/2 bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-l-md z-20">C2</div>
+        </div>
+        <div class="zoom-buttons absolute" style="top: 130px; right: 35px;">
+            <button id="zoom-out-2" class="zoom-button">-</button>
+            <button id="zoom-in-2" class="zoom-button">+</button>
+        </div>
+
+        <h2 class="text-sm font-semibold text-blue-300 bpm-label-abs absolute" style="top: 80px; right: 45px;">BPM: <span id="bpm-value-2" class="bpm-value">130.0</span></h2>
+        <button id="sync-2" class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold py-1 px-2 rounded-md shadow-lg transition-all duration-200 absolute" style="top: 480px; right: 55px;">
+            SYNC
+        </button>
+        <input type="range" id="bpm-slider-2" class="vertical-fader absolute" style="top: 440px; right: 80px; transform: rotate(-90deg);">
+
+
+        <div class="play-cue-buttons-abs absolute" style="bottom: 95px; left: 50%; transform: translateX(-50%); display: flex; gap: 180px;">
+            <button id="cue-1" class="cue-button">CUE L</button>
+            <button id="cue-2" class="cue-button">CUE R</button>
+        </div>
+
+        <div class="play-cue-buttons-abs absolute" style="bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 180px;">
+            <button id="play-pause-1" class="play-button">▶️ PLAY A</button>
+            <button id="play-pause-2" class="play-button">▶️ PLAY B</button>
+        </div>
+
+        <div class="crossfader-container absolute" style="bottom: 60px; left: 0; right: 0; width: 100%; max-width: 180px; margin: 0 auto;">
+            <label for="crossfader" class="sr-only">Crossfader</label>
+            <input type="range" id="crossfader" min="0" max="1" value="0.5" step="0.01">
+        </div>
+
+        <button id="debug-play-all" class="absolute" style="bottom: 0px; left: 50%; transform: translateX(-50%);">
+            ▶️▶️ Play All
+        </button>
+
+        <div id="visualization-frame" class="visualization-frame">
+            <div id="platform-game-container">
+                <h2 class="text-xl text-blue-300 font-bold mb-2">Platform Jump</h2>
+                <div id="platform-game-area">
+                    <canvas id="platformGameCanvas"></canvas>
+                    <div id="minigameMessageBox"></div> </div>
+                <div id="game-score" class="text-lg font-bold text-gray-200">Score: 0</div>
+                <div class="minigame-controls">
+                    <button id="minigame-start-button" class="minigame-control-button">▶️ Start Game</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="absolute" style="bottom: 120px; left: 50%; transform: translateX(-50%); z-index: 60;">
+            <label for="toggleVisualization" class="inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="toggleVisualization" class="sr-only peer">
+                <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">Show Visualization</span>
+            </label>
+        </div>
+
+    </div>
+
+    <audio id="audio1" src="https://raw.githubusercontent.com/DjLess/MP3_repo/main/SCREECHMASTER.mp3" preload="auto"></audio>
+    <audio id="audio2" src="https://raw.githubusercontent.com/DjLess/MP3_repo/main/Somewhere%20Over%20The%20Rainbow%20-%20Polizzi%20Vs%20Richter%20(%20Israel%20IZ%20Techno%20Bootleg).mp3" preload="auto"></audio>
+
+    <script>
+        // Get references to audio elements
+        const audio1 = document.getElementById('audio1');
+        const audio2 = document.getElementById('audio2');
+
+        // Get references to play/pause buttons
+        const playPause1 = document.getElementById('play-pause-1');
+        const playPause2 = document.getElementById('play-pause-2');
+
+        // Get references to CUE buttons
+        const cue1Button = document.getElementById('cue-1');
+        const cue2Button = document.getElementById('cue-2');
+
+        // Get references to the "Play All" debug button
+        const debugPlayAllButton = document.getElementById('debug-play-all');
+
+        // Get references to BPM sliders and their values
+        const bpmSlider1 = document.getElementById('bpm-slider-1');
+        const bpmValue1 = document.getElementById('bpm-value-1');
+        const bpmSlider2 = document.getElementById('bpm-slider-2');
+        const bpmValue2 = document.getElementById('bpm-value-2');
+
+        // Get references to SYNC buttons
+        const sync1 = document.getElementById('sync-1');
+        const sync2 = document.getElementById('sync-2');
+
+        // Get references to jog wheels
+        const jogWheel1 = document.getElementById('jog-wheel-1');
+        const jogWheel2 = document.getElementById('jog-wheel-2');
+
+        // Get references to the beat visualizer containers and their inner wrappers
+        const beatVisualizer1 = document.getElementById('beat-visualizer-1');
+        const beatVisualizer2 = document.getElementById('beat-visualizer-2');
+        const beatBarsWrapper1 = document.getElementById('beat-bars-wrapper-1');
+        const beatBarsWrapper2 = document.getElementById('beat-bars-wrapper-2');
+
+        // Remapping for the old kick pulse logic (targeting the main visualizer div for the 'active' class)
+        // IMPORTANT: These must be defined AFTER beatVisualizer1/2
+        const kickPulse1 = beatVisualizer1;
+        const kickPulse2 = beatVisualizer2;
+
+        // Get reference to the synced kicks indicator
+        const syncedKicksIndicator = document.getElementById('synced-kicks-indicator');
+
+        // Get reference to the crossfader
+        const crossfader = document.getElementById('crossfader');
+
+        // NEW REFERENCES FOR ZOOM BUTTONS
+        const zoomIn1 = document.getElementById('zoom-in-1');
+        const zoomOut1 = document.getElementById('zoom-out-1');
+        const zoomIn2 = document.getElementById('zoom-in-2');
+        const zoomOut2 = document.getElementById('zoom-out-2');
+
+        // Get references to the new SVG circle elements for the trace
+        const jogTraceCircle1 = document.getElementById('jog-trace-circle-1');
+        const jogTraceCircle2 = document.getElementById('jog-trace-circle-2');
+
+        // NEW REFERENCES FOR VISUALIZATION FRAME AND TOGGLE
+        const visualizationFrame = document.getElementById('visualization-frame');
+        const toggleVisualization = document.getElementById('toggleVisualization');
+
+
+        // Variables to store kick intervals
+        let kickInterval1 = null;
+        let kickInterval2 = null;
+
+        // Variables to store CUE points
+        let cuePoint1 = 0; // Default to start of track
+        let cuePoint2 = 0; // Default to start of track
+
+        // Variables for beat visualization timeouts (for highlighting)
+        let beatHighlightTimeouts1 = [];
+        let beatHighlightTimeouts2 = [];
+
+        // Variables for continuous animation control
+        let animationFrameId1 = null; // for beat visualizer
+        let animationFrameId2 = null; // for beat visualizer
+
+        // Beat visualization configuration
+        const SUB_BEATS_PER_MAIN_BEAT = 4; // Each main beat is divided into 4 sub-beats (e.g., 16th notes)
+        // Zoom levels for beat visualization (number of main beats displayed)
+        const ZOOM_LEVELS = [4, 8, 16, 32];
+        let currentNumMainBeatsDisplayed1 = 8; // Initial display for track 1
+        let currentNumMainMainBeatsDisplayed2 = 8; // Initial display for track 2
+
+        // Constant for the total number of sub-beats to generate for continuous scrolling
+        const TOTAL_GENERATED_SUB_BEATS = 64 * SUB_BEATS_PER_MAIN_BEAT; // Generate enough for 64 main beats (256 sub-beats)
+
+        // Define minimum visual properties for bars and gaps
+        const MIN_BAR_WIDTH_VISUAL = 1;
+        const MIN_GAP_VISUAL = 0.5;
+
+        // Reference BPM for visual density scaling
+        const REFERENCE_BPM_FOR_VISUAL_DENSITY = 120; // Example reference BPM
+
+        // Window of time in milliseconds during which a kick is considered "active"
+        const KICK_ACTIVE_WINDOW_MS = 400;
+        const BPM_TOLERANCE = 0.5;
+        const VISUALIZATION_DURATION_MS = 200; // Duration in milliseconds that the visual kick pulse is active
+
+        // Initial base BPMs for each track
+        const initialBaseBPM1 = 145;
+        const initialBaseBPM2 = 130;
+
+        // Define the BPM range for sliders (+- 16 BPM)
+        const BPM_RANGE = 16;
+
+        /**
+         * Sets up the min/max range and initial value for a BPM slider.
+         * @param {HTMLInputElement} slider - The BPM slider element.
+         * @param {number} initialBPM - The initial BPM for the track.
+         */
+        function setupBPMSlider(slider, initialBPM) {
+            // Invert min/max so that the highest value is visually at the top
+            slider.min = (initialBPM - BPM_RANGE).toFixed(1);
+            slider.max = (initialBPM + BPM_RANGE).toFixed(1);
+            slider.value = initialBPM.toFixed(1); // Initial value is the base BPM
+            slider.step = 0.1;
+        }
+
+        // Initialize BPM sliders with correct range
+        setupBPMSlider(bpmSlider1, initialBaseBPM1);
+        setupBPMSlider(bpmSlider2, initialBaseBPM2);
+
+        /**
+         * Activates the visual kick pulse for a specific duration.
+         * @param {HTMLElement} element - The visual pulse element.
+         */
+        function activarVisualizacionKick(element) {
+            element.classList.add('active');
+            setTimeout(() => {
+                element.classList.remove('active');
+            }, VISUALIZATION_DURATION_MS);
+        }
+
+        /**
+         * Starts the kick animation based on an interval.
+         * @param {HTMLAudioElement} audio - The audio element.
+         * @param {HTMLElement} pulseElement - The visual pulse element.
+         * @param {string} intervalVariableName - Name of the global variable holding the interval ID (e.g., 'kickInterval1').
+         * @param {number} bpm - Current BPM of the track.
+         * @param {Function} [onBeatCallback] - Optional callback function to execute on each beat.
+         */
+        function startKickAnimationInterval(audio, pulseElement, intervalVariableName, bpm, onBeatCallback = null) {
+            // Clear any existing interval for this track
+            if (window[intervalVariableName]) {
+                clearInterval(window[intervalVariableName]);
+            }
+            const msPerBeat = (60 / bpm) * 1000;
+            // Start the interval
+            window[intervalVariableName] = setInterval(() => {
+                // Only activate the kick if audio is playing
+                if (!audio.paused) {
+                    activarVisualizacionKick(pulseElement);
+                    if (onBeatCallback) {
+                        onBeatCallback(audio); // Execute the callback on each beat, passing the audio element
+                    }
+                }
+            }, msPerBeat);
+        }
+
+        /**
+         * Continuously checks if kicks of both tracks are sounding simultaneously
+         * (based on whether the visual element is active) and if BPMs are similar.
+         */
+        function checkSyncedKicks() {
+            // Check if both visual kick elements are active
+            const isKick1VisuallyActive = kickPulse1.classList.contains('active');
+            const isKick2VisuallyActive = kickPulse2.classList.contains('active');
+
+            // Get current BPMs (values displayed on the interface)
+            const currentBPM1 = parseFloat(bpmValue1.textContent);
+            const currentBPM2 = parseFloat(bpmValue2.textContent);
+
+            // Check if BPMs are similar within the defined tolerance
+            const areBPMsSimilar = Math.abs(currentBPM1 - currentBPM2) <= BPM_TOLERANCE;
+
+            // Activate/deactivate sync indicator
+            // Only activates if both kicks are visually active, BPMs are similar,
+            // and both audios are playing.
+            if (isKick1VisuallyActive && isKick2VisuallyActive && areBPMsSimilar && !audio1.paused && !audio2.paused) {
+                syncedKicksIndicator.classList.add('active');
+            } else {
+                syncedKicksIndicator.classList.remove('active');
+            }
+
+            // Recursively call for a continuous loop in the next animation frame
+            requestAnimationFrame(checkSyncedKicks);
+        }
+
+        /**
+         * Clears all pending timeouts for beat highlighting for a given track.
+         * @param {Array<number>} timeoutsArray - The array of timeout IDs.
+         */
+        function clearBeatHighlightTimeouts(timeoutsArray) {
+            timeoutsArray.forEach(timeoutId => clearTimeout(timeoutId));
+            timeoutsArray.length = 0; // Clear the array
+        }
+
+        /**
+         * Generates and appends beat bars to the specified wrapper.
+         * @param {HTMLElement} wrapper - The beat bars wrapper element.
+         * @param {number} numMainBeats - The number of main beats to generate.
+         * @param {number} subBeatsPerMainBeat - The number of sub-beats per main beat.
+         * @param {number} wrapperWidth - The width of the beat visualizer container.
+         */
+        function generateBeatBars(wrapper, numMainBeats, subBeatsPerMainBeat, wrapperWidth) {
+            wrapper.innerHTML = ''; // Clear existing bars
+            const totalSubBeats = TOTAL_GENERATED_SUB_BEATS; // Generate a fixed large number of bars
+
+            // Calculate optimal bar width and gap based on the wrapper width and number of beats to display
+            const effectiveWidth = wrapperWidth - (MIN_GAP_VISUAL * (totalSubBeats - 1));
+            let barWidth = Math.max(MIN_BAR_WIDTH_VISUAL, effectiveWidth / totalSubBeats);
+            let gap = MIN_GAP_VISUAL;
+
+            // Adjust barWidth if it becomes too large, potentially reducing gap if needed, or capping barWidth
+            if (barWidth > (wrapperWidth / (totalSubBeats / 2))) { // Heuristic to prevent excessively wide bars
+                barWidth = (wrapperWidth / (totalSubBeats / 2));
+                gap = (wrapperWidth - (barWidth * totalSubBeats)) / (totalSubBeats - 1);
+            }
+
+            for (let i = 0; i < totalSubBeats; i++) {
+                const beatBar = document.createElement('div');
+                beatBar.classList.add('beat-bar');
+
+                // Determine beat type
+                if (i % subBeatsPerMainBeat === 0) {
+                    beatBar.classList.add('beat-type-kick'); // Main beat (kick)
+                } else if (i % (subBeatsPerMainBeat / 2) === 0) {
+                    beatBar.classList.add('beat-type-2'); // Half-beat
+                } else {
+                    beatBar.classList.add('beat-type-4'); // Quarter-beat
+                }
+                beatBar.style.width = `${barWidth}px`;
+                beatBar.style.marginRight = `${gap}px`; // Apply gap as right margin
+                wrapper.appendChild(beatBar);
+            }
+        }
+
+        /**
+         * Updates the visual position and highlighting of beat bars.
+         * @param {HTMLAudioElement} audio - The audio element.
+         * @param {HTMLElement} beatBarsWrapper - The wrapper containing the beat bars.
+         * @param {Array<number>} timeoutsArray - Array to store timeout IDs.
+         * @param {number} currentNumMainBeatsDisplayed - Number of main beats currently displayed.
+         */
+        function updateBeatVisualization(audio, beatBarsWrapper, timeoutsArray, currentNumMainBeatsDisplayed) {
+            clearBeatHighlightTimeouts(timeoutsArray); // Clear previous timeouts
+
+            const msPerBeat = (60 / parseFloat(audio.playbackRate * getBPMFromAudio(audio))) * 1000;
+            const msPerSubBeat = msPerBeat / SUB_BEATS_PER_MAIN_BEAT;
+
+            const beatVisualizerWidth = beatBarsWrapper.parentElement.offsetWidth;
+            const totalSubBeats = beatBarsWrapper.children.length; // Use the actual number of generated bars
+
+            // Calculate total width of all bars and gaps
+            let totalBarsWidth = 0;
+            for (let i = 0; i < totalSubBeats; i++) {
+                const bar = beatBarsWrapper.children[i];
+                totalBarsWidth += parseFloat(bar.style.width) + parseFloat(bar.style.marginRight);
+            }
+
+            // Calculate the scaling factor for the visualizer to fit the selected zoom level
+            const scaleFactor = (currentNumMainBeatsDisplayed * SUB_BEATS_PER_MAIN_BEAT) / totalSubBeats;
+
+
+            // Determine the current beat index based on currentTime and BPM
+            const currentBeatTime = (audio.currentTime * 1000) / msPerSubBeat;
+
+            const scrollOffset = -(currentBeatTime * (parseFloat(beatBarsWrapper.children[0].style.width) + parseFloat(beatBarsWrapper.children[0].style.marginRight)));
+
+            // Apply transform for continuous scrolling
+            beatBarsWrapper.style.transform = `translateX(${scrollOffset}px)`;
+            // Apply scale to the wrapper to adjust the density of the bars within the view
+            beatBarsWrapper.style.transform += ` scaleX(${scaleFactor})`;
+
+            // Highlighting logic
+            const currentSubBeatIndex = Math.floor(currentBeatTime);
+            for (let i = 0; i < beatBarsWrapper.children.length; i++) {
+                const bar = beatBarsWrapper.children[i];
+                bar.classList.remove('active-beat', 'next-beat'); // Remove previous highlights
+            }
+
+            // Highlight the active beat
+            if (beatBarsWrapper.children[currentSubBeatIndex]) {
+                beatBarsWrapper.children[currentSubBeatIndex].classList.add('active-beat');
+            }
+
+            // Highlight the next beat (e.g., the next kick)
+            const nextKickIndex = Math.ceil((currentSubBeatIndex + 1) / SUB_BEATS_PER_MAIN_BEAT) * SUB_BEATS_PER_MAIN_BEAT;
+            if (beatBarsWrapper.children[nextKickIndex]) {
+                beatBarsWrapper.children[nextKickIndex].classList.add('next-beat');
+            }
+        }
+
+        /**
+         * Initiates a continuous animation loop for beat visualization.
+         * @param {HTMLAudioElement} audio - The audio element.
+         * @param {HTMLElement} beatBarsWrapper - The wrapper containing beat bars.
+         * @param {Array<number>} timeoutsArray - Array to store timeout IDs.
+         * @param {string} animationFrameVariableName - Name of the global variable holding the animation frame ID.
+         * @param {number} currentNumMainBeatsDisplayed - Number of main beats currently displayed.
+         */
+        function startBeatVisualizationLoop(audio, beatBarsWrapper, timeoutsArray, animationFrameVariableName, currentNumMainBeatsDisplayed) {
+            if (window[animationFrameVariableName]) {
+                cancelAnimationFrame(window[animationFrameVariableName]);
+            }
+
+            const animate = () => {
+                if (!audio.paused) {
+                    updateBeatVisualization(audio, beatBarsWrapper, timeoutsArray, currentNumMainBeatsDisplayed);
+                }
+                window[animationFrameVariableName] = requestAnimationFrame(animate);
+            };
+            window[animationFrameVariableName] = requestAnimationFrame(animate);
+        }
+
+
+        // Event Listeners for Play/Pause buttons
+        playPause1.addEventListener('click', () => {
+            if (audio1.paused) {
+                audio1.play();
+                playPause1.textContent = '⏸️ PAUSE A';
+                // Start kick animation and beat visualization for audio1
+                startKickAnimationInterval(audio1, kickPulse1, 'kickInterval1', parseFloat(bpmValue1.textContent));
+                startBeatVisualizationLoop(audio1, beatBarsWrapper1, beatHighlightTimeouts1, 'animationFrameId1', currentNumMainBeatsDisplayed1);
+            } else {
+                audio1.pause();
+                playPause1.textContent = '▶️ PLAY A';
+                // Stop kick animation and beat visualization for audio1
+                clearInterval(kickInterval1);
+                cancelAnimationFrame(animationFrameId1);
+            }
+            // Update platform dynamics only if the game is active
+            if (platformGameRunning) {
+                 updatePlatformDynamics();
+            }
+        });
+
+        playPause2.addEventListener('click', () => {
+            if (audio2.paused) {
+                audio2.play();
+                playPause2.textContent = '⏸️ PAUSE B';
+                // Start kick animation and beat visualization for audio2
+                startKickAnimationInterval(audio2, kickPulse2, 'kickInterval2', parseFloat(bpmValue2.textContent));
+                startBeatVisualizationLoop(audio2, beatBarsWrapper2, beatHighlightTimeouts2, 'animationFrameId2', currentNumMainMainBeatsDisplayed2);
+            } else {
+                audio2.pause();
+                playPause2.textContent = '▶️ PLAY B';
+                // Stop kick animation and beat visualization for audio2
+                clearInterval(kickInterval2);
+                cancelAnimationFrame(animationFrameId2);
+            }
+        });
+
+        // Event Listeners for CUE buttons
+        cue1Button.addEventListener('click', () => {
+            cuePoint1 = audio1.currentTime;
+            console.log(`CUE point for Audio 1 set at: ${cuePoint1.toFixed(2)} seconds`);
+        });
+
+        cue2Button.addEventListener('click', () => {
+            cuePoint2 = audio2.currentTime;
+            console.log(`CUE point for Audio 2 set at: ${cuePoint2.toFixed(2)} seconds`);
+        });
+
+        // Event Listener for "Play All" debug button
+        debugPlayAllButton.addEventListener('click', () => {
+            audio1.play();
+            audio2.play();
+            playPause1.textContent = '⏸️ PAUSE A';
+            playPause2.textContent = '⏸️ PAUSE B';
+            startKickAnimationInterval(audio1, kickPulse1, 'kickInterval1', parseFloat(bpmValue1.textContent));
+            startBeatVisualizationLoop(audio1, beatBarsWrapper1, beatHighlightTimeouts1, 'animationFrameId1', currentNumMainBeatsDisplayed1);
+            startKickAnimationInterval(audio2, kickPulse2, 'kickInterval2', parseFloat(bpmValue2.textContent));
+            startBeatVisualizationLoop(audio2, beatBarsWrapper2, beatHighlightTimeouts2, 'animationFrameId2', currentNumMainMainBeatsDisplayed2);
+            // Update platform dynamics only if the game is active
+            if (platformGameRunning) {
+                updatePlatformDynamics();
+            }
+        });
+
+        // Event Listeners for BPM sliders
+        bpmSlider1.addEventListener('input', () => {
+            const newBPM = parseFloat(bpmSlider1.value);
+            bpmValue1.textContent = newBPM.toFixed(1);
+            audio1.playbackRate = newBPM / initialBaseBPM1;
+            // Restart kick animation with new BPM if playing
+            if (!audio1.paused) {
+                startKickAnimationInterval(audio1, kickPulse1, 'kickInterval1', newBPM);
+            }
+            // Update platform dynamics only if the game is active
+            if (platformGameRunning) {
+                 updatePlatformDynamics();
+            }
+        });
+
+        bpmSlider2.addEventListener('input', () => {
+            const newBPM = parseFloat(bpmSlider2.value);
+            bpmValue2.textContent = newBPM.toFixed(1);
+            audio2.playbackRate = newBPM / initialBaseBPM2;
+            // Restart kick animation with new BPM if playing
+            if (!audio2.paused) {
+                startKickAnimationInterval(audio2, kickPulse2, 'kickInterval2', newBPM);
+            }
+        });
+
+        // Event Listeners for SYNC buttons
+        sync1.addEventListener('click', () => {
+            const currentBPM2 = parseFloat(bpmValue2.textContent);
+            bpmSlider1.value = currentBPM2.toFixed(1);
+            bpmValue1.textContent = currentBPM2.toFixed(1);
+            audio1.playbackRate = currentBPM2 / initialBaseBPM1;
+            if (!audio1.paused) {
+                startKickAnimationInterval(audio1, kickPulse1, 'kickInterval1', currentBPM2);
+            }
+            // Update platform dynamics only if the game is active
+            if (platformGameRunning) {
+                 updatePlatformDynamics();
+            }
+        });
+
+        sync2.addEventListener('click', () => {
+            const currentBPM1 = parseFloat(bpmValue1.textContent);
+            bpmSlider2.value = currentBPM1.toFixed(1);
+            bpmValue2.textContent = currentBPM1.toFixed(1);
+            audio2.playbackRate = currentBPM1 / initialBaseBPM2;
+            if (!audio2.paused) {
+                startKickAnimationInterval(audio2, kickPulse2, 'kickInterval2', currentBPM1);
+            }
+        });
+
+        // Event Listener for Crossfader
+        crossfader.addEventListener('input', () => {
+            const value = parseFloat(crossfader.value);
+            audio1.volume = 1 - value;
+            audio2.volume = value;
+        });
+
+        // Helper function to get actual BPM from audio (considering playbackRate)
+        function getBPMFromAudio(audio) {
+            if (audio.id === 'audio1') {
+                return parseFloat(bpmValue1.textContent);
+            } else if (audio.id === 'audio2') {
+                return parseFloat(bpmValue2.textContent);
+            }
+            return 0;
+        }
+
+        // Event Listeners for Zoom Buttons
+        zoomIn1.addEventListener('click', () => {
+            let currentIndex = ZOOM_LEVELS.indexOf(currentNumMainBeatsDisplayed1);
+            if (currentIndex < ZOOM_LEVELS.length - 1) {
+                currentNumMainBeatsDisplayed1 = ZOOM_LEVELS[currentIndex + 1];
+                generateBeatBars(beatBarsWrapper1, currentNumMainBeatsDisplayed1, SUB_BEATS_PER_MAIN_BEAT, beatVisualizer1.offsetWidth);
+                startBeatVisualizationLoop(audio1, beatBarsWrapper1, beatHighlightTimeouts1, 'animationFrameId1', currentNumMainBeatsDisplayed1);
+            }
+        });
+
+        zoomOut1.addEventListener('click', () => {
+            let currentIndex = ZOOM_LEVELS.indexOf(currentNumMainBeatsDisplayed1);
+            if (currentIndex > 0) {
+                currentNumMainBeatsDisplayed1 = ZOOM_LEVELS[currentIndex - 1];
+                generateBeatBars(beatBarsWrapper1, currentNumMainBeatsDisplayed1, SUB_BEATS_PER_MAIN_BEAT, beatVisualizer1.offsetWidth);
+                startBeatVisualizationLoop(audio1, beatBarsWrapper1, beatHighlightTimeouts1, 'animationFrameId1', currentNumMainBeatsDisplayed1);
+            }
+        });
+
+        zoomIn2.addEventListener('click', () => {
+            let currentIndex = ZOOM_LEVELS.indexOf(currentNumMainMainBeatsDisplayed2);
+            if (currentIndex < ZOOM_LEVELS.length - 1) {
+                currentNumMainMainBeatsDisplayed2 = ZOOM_LEVELS[currentIndex + 1];
+                generateBeatBars(beatBarsWrapper2, currentNumMainMainBeatsDisplayed2, SUB_BEATS_PER_MAIN_BEAT, beatVisualizer2.offsetWidth);
+                startBeatVisualizationLoop(audio2, beatBarsWrapper2, beatHighlightTimeouts2, 'animationFrameId2', currentNumMainMainBeatsDisplayed2);
+            }
+        });
+
+        zoomOut2.addEventListener('click', () => {
+            let currentIndex = ZOOM_LEVELS.indexOf(currentNumMainMainBeatsDisplayed2);
+            if (currentIndex > 0) {
+                currentNumMainMainBeatsDisplayed2 = ZOOM_LEVELS[currentIndex - 1];
+                generateBeatBars(beatBarsWrapper2, currentNumMainMainBeatsDisplayed2, SUB_BEATS_PER_MAIN_BEAT, beatVisualizer2.offsetWidth);
+                startBeatVisualizationLoop(audio2, beatBarsWrapper2, beatHighlightTimeouts2, 'animationFrameId2', currentNumMainMainBeatsDisplayed2);
+            }
+        } );
+
+        // Initial beat bars generation on load
+        window.addEventListener('load', () => {
+            generateBeatBars(beatBarsWrapper1, currentNumMainBeatsDisplayed1, SUB_BEATS_PER_MAIN_BEAT, beatVisualizer1.offsetWidth);
+            generateBeatBars(beatBarsWrapper2, currentNumMainMainBeatsDisplayed2, SUB_BEATS_PER_MAIN_BEAT, beatVisualizer2.offsetWidth);
+        });
+
+        // Minigame Variables
+        const canvas = document.getElementById('platformGameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const ballRadius = 7; 
+        let ballX, ballY, ballDY; // X position, Y position, Y velocity
+        
+        // Base values for dynamic adjustments
+        const baseJumpStrength = -4.5; // Adjusted slightly for game feel
+        const baseGravity = 0.25; // Adjusted slightly for game feel
+        let currentJumpStrength = baseJumpStrength; // Will be dynamically updated
+        let currentGravity = baseGravity; // Will be dynamically updated
+
+        const platformY = canvas.height * 0.75; // Fixed Y position for platforms
+        let isJumping = false;
+        let score = 0;
+        let platformGameRunning = false;
+        let platformGameOver = false;
+
+        // Platform constants
+        const PLATFORM_WIDTH = 20; 
+        const PLATFORM_HEIGHT = 7;
+        const REFERENCE_BPM_FOR_PLATFORMS = 120; // Reference BPM for platform spacing/speed
+        // This is the total horizontal space one platform + its intended gap occupies at REFERENCE_BPM_FOR_PLATFORMS
+        const TARGET_PLATFORM_SPACING_PX_AT_REFERENCE_BPM = 40; // Pixels per main beat for platforms
+
+        let platforms = []; // Stores platform objects {x, y, width, height, spawnBeatTime}
+        let upcomingPlatforms = []; // Stores planned future platforms {beatIndex, spawned}
+        const PLATFORM_SPAWN_BEAT_INTERVAL = SUB_BEATS_PER_MAIN_BEAT * 1; // Spawn a platform every main beat (every 4 sub-beats)
+        const ANTICIPATION_BEATS = SUB_BEATS_PER_MAIN_BEAT * 4; // Spawn platforms 4 main beats ahead of current audio position
+
+        let pxPerSubBeat = 0; // Dynamic, calculated based on BPM
+
+        let gameFrameId; // For requestAnimationFrame
+
+        // Minigame UI elements
+        const minigameStartButton = document.getElementById('minigame-start-button');
+        const minigameMessageBox = document.getElementById('minigameMessageBox');
+        const gameScoreDisplay = document.getElementById('game-score');
+
+        // Helper to check if Track 1 is playing
+        function isTrack1Playing() {
+            return !audio1.paused;
+        }
+
+        // Function to calculate platform speed, generation interval, and jump strength based on BPM of Track 1
+        // Now calculates pxPerSubBeat, jumpStrength, and gravity
+        function calculatePlatformDynamics() {
+            const currentBPM1 = parseFloat(bpmValue1.textContent);
+            const msPerBeat = (60 / currentBPM1) * 1000;
+            const msPerSubBeat = msPerBeat / SUB_BEATS_PER_MAIN_BEAT;
+
+            // Calculate pxPerSubBeat: How many pixels one sub-beat should occupy visually
+            // Scales with BPM: faster BPM means more pixels per sub-beat if we want platforms to appear faster but maintain visual density
+            // Or inverse, if we want them to feel more "cramped" at higher BPMs
+            // Let's make them feel faster/more spaced at higher BPMs
+            const calculatedPxPerSubBeat = (TARGET_PLATFORM_SPACING_PX_AT_REFERENCE_BPM / PLATFORM_SPAWN_BEAT_INTERVAL) * (currentBPM1 / REFERENCE_BPM_FOR_PLATFORMS);
+            
+            // Adjust jump strength and gravity with BPM
+            // Higher BPM = shorter, faster jumps & quicker fall (more challenging)
+            const calculatedJumpStrength = baseJumpStrength * (REFERENCE_BPM_FOR_PLATFORMS / currentBPM1);
+            const calculatedGravity = baseGravity * (currentBPM1 / REFERENCE_BPM_FOR_PLATFORMS);
+            
+            return {
+                currentBPM: currentBPM1,
+                pxPerSubBeat: calculatedPxPerSubBeat,
+                jumpStrength: calculatedJumpStrength,
+                gravity: calculatedGravity
+            };
+        }
+
+        // Function to update platform dynamics (pxPerSubBeat, jumpStrength, gravity)
+        // This will be called when BPMs change or play state changes for Track 1
+        function updatePlatformDynamics() {
+            const dynamics = calculatePlatformDynamics();
+            pxPerSubBeat = dynamics.pxPerSubBeat;
+            currentJumpStrength = dynamics.jumpStrength;
+            currentGravity = dynamics.gravity;
+
+            // No longer uses setInterval, platforms are generated based on audio.currentTime in gameLoop
+            console.log(`Platform dynamics updated: BPM: ${dynamics.currentBPM.toFixed(1)}, Px/SubBeat: ${pxPerSubBeat.toFixed(2)}, Jump: ${currentJumpStrength.toFixed(2)}, Gravity: ${currentGravity.toFixed(2)}`);
+        }
+
+        // Function to initialize the platform game
+        function initializePlatformGame() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            const initialPlatformY = canvas.height * 0.75;
+
+            ballX = canvas.width / 4;
+            ballY = initialPlatformY - ballRadius;
+            ballDY = 0;
+            platforms = []; // Clear existing visual platforms
+            upcomingPlatforms = []; // Clear planned platforms
+            score = 0;
+            gameScoreDisplay.textContent = `Score: ${score}`;
+            platformGameRunning = false;
+            platformGameOver = false;
+            minigameMessageBox.style.display = 'none';
+            isJumping = false;
+
+            // Initialize upcomingPlatforms array
+            // Start planning from current audio time or 0 if not playing
+            const currentAudioTime = isTrack1Playing() ? audio1.currentTime : 0;
+            const msPerBeat = (60 / parseFloat(bpmValue1.textContent)) * 1000;
+            const msPerSubBeat = msPerBeat / SUB_BEATS_PER_MAIN_BEAT;
+            
+            let initialSubBeatTime = (currentAudioTime * 1000) / msPerSubBeat;
+            // Ensure first platform aligns with a main beat
+            let nextBeatIndex = Math.ceil(initialSubBeatTime / PLATFORM_SPAWN_BEAT_INTERVAL) * PLATFORM_SPAWN_BEAT_INTERVAL;
+            
+            // Add an initial platform right where the ball starts (or slightly before)
+            // This is a special platform to ensure the ball has something to land on at the start
+            platforms.push({
+                x: ballX - PLATFORM_WIDTH / 2, // Position it under the ball
+                y: initialPlatformY,
+                width: PLATFORM_WIDTH,
+                height: PLATFORM_HEIGHT,
+                spawnBeatTime: initialSubBeatTime // Mark its conceptual spawn beat as now
+            });
+
+
+            // Pre-populate upcomingPlatforms for several screens ahead
+            for (let i = 0; i < 60; i++) { // Plan for 60 main beats ahead
+                upcomingPlatforms.push({
+                    beatIndex: nextBeatIndex + (i * PLATFORM_SPAWN_BEAT_INTERVAL),
+                    spawned: false
+                });
+            }
+
+            // Ensure platform dynamics are calculated and set for initialization
+            updatePlatformDynamics();
+        }
+
+        // Function to start the platform game loop
+        function startPlatformGame() {
+            if (!isTrack1Playing()) {
+                minigameMessageBox.textContent = "Play Track 1 to start the game!";
+                minigameMessageBox.style.display = 'block';
+                return;
+            }
+
+            platformGameRunning = true;
+            platformGameOver = false;
+            minigameMessageBox.style.display = 'none';
+            
+            // Ensure dynamics are up-to-date when starting/resuming
+            updatePlatformDynamics();
+
+            // Start the game loop
+            gameFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        // Function to pause the platform game
+        function pausePlatformGame() {
+            platformGameRunning = false;
+            cancelAnimationFrame(gameFrameId);
+            minigameMessageBox.textContent = "Game Paused";
+            minigameMessageBox.style.display = 'block';
+            minigameStartButton.textContent = "▶️ Resume Game";
+        }
+
+        // Function to end the platform game (Game Over)
+        function endGame() {
+            platformGameRunning = false;
+            platformGameOver = true;
+            cancelAnimationFrame(gameFrameId);
+            minigameMessageBox.textContent = `Game Over! Score: ${score}`;
+            minigameMessageBox.style.display = 'block';
+            minigameStartButton.textContent = "🔄 Restart Game";
+        }
+
+        // Game Loop
+        function gameLoop() {
+            if (!platformGameRunning) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Calculate current audio time in terms of sub-beats
+            const currentBPM1 = parseFloat(bpmValue1.textContent);
+            const msPerBeat = (60 / currentBPM1) * 1000;
+            const msPerSubBeat = msPerBeat / SUB_BEATS_PER_MAIN_BEAT;
+            const currentSubBeatTime = (audio1.currentTime * 1000) / msPerSubBeat;
+
+            // --- Platform Spawning Logic ---
+            // The point on screen where a platform should be when its spawnBeatTime matches currentSubBeatTime
+            const SPAWN_POINT_X_ON_SCREEN = canvas.width * 0.75; // 3/4 across the screen
+
+            for (let i = 0; i < upcomingPlatforms.length; i++) {
+                const upcomingPlatform = upcomingPlatforms[i];
+                // Check if the platform's designated beat time is within an anticipation window
+                // and it hasn't been spawned yet
+                if (!upcomingPlatform.spawned && upcomingPlatform.beatIndex <= currentSubBeatTime + ANTICIPATION_BEATS) {
+                    platforms.push({
+                        x: 0, // Temp x, will be calculated later
+                        y: canvas.height * 0.75,
+                        width: PLATFORM_WIDTH,
+                        height: PLATFORM_HEIGHT,
+                        spawnBeatTime: upcomingPlatform.beatIndex // Store the beat index for movement calculation
+                    });
+                    upcomingPlatform.spawned = true; // Mark as spawned
+                }
+            }
+
+            // Refill upcomingPlatforms if running low
+            if (upcomingPlatforms.length < 30) { // Keep a buffer of 30 future platforms
+                let lastBeatIndex = 0;
+                if (upcomingPlatforms.length > 0) {
+                    lastBeatIndex = upcomingPlatforms[upcomingPlatforms.length - 1].beatIndex;
+                } else {
+                    // If upcomingPlatforms is empty, start from current audio position + an offset
+                    lastBeatIndex = Math.ceil(currentSubBeatTime / PLATFORM_SPAWN_BEAT_INTERVAL) * PLATFORM_SPAWN_BEAT_INTERVAL;
+                }
+
+                for (let i = 0; i < 30; i++) { // Add 30 more anticipated main beats
+                    upcomingPlatforms.push({
+                        beatIndex: lastBeatIndex + (i * PLATFORM_SPAWN_BEAT_INTERVAL),
+                        spawned: false
+                    });
+                }
+            }
+
+            // --- Update ball position ---
+            ballY += ballDY;
+            ballDY += currentGravity; // Use dynamic gravity
+
+            // Draw ball
+            ctx.beginPath();
+            ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
+            ctx.fillStyle = '#FFD700'; // Gold
+            ctx.shadowColor = 'rgba(246, 224, 94, 0.7)';
+            ctx.shadowBlur = 15;
+            ctx.fill();
+            ctx.shadowColor = 'transparent'; // Reset shadow
+            ctx.shadowBlur = 0;
+            ctx.closePath();
+
+            // --- Update and draw platforms based on beat progression ---
+            for (let i = platforms.length - 1; i >= 0; i--) {
+                let platform = platforms[i];
+
+                // Calculate platform's X position based on current beat and its designated spawn beat
+                // A platform is at SPAWN_POINT_X_ON_SCREEN when currentSubBeatTime == platform.spawnBeatTime
+                platform.x = SPAWN_POINT_X_ON_SCREEN - ((platform.spawnBeatTime - currentSubBeatTime) * pxPerSubBeat);
+
+                ctx.fillStyle = '#4682b4'; // Steel Blue
+                ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+
+                // Collision detection (ball with platform)
+                if (ballDY > 0 && // Ball is falling
+                    ballY + ballRadius >= platform.y && // Ball's bottom touches or is below platform top
+                    ballY + ballRadius <= platform.y + platform.height && // Ball's bottom is not past platform bottom
+                    ballX + ballRadius > platform.x && // Ball's right edge passed platform's left edge
+                    ballX - ballRadius < platform.x + platform.width // Ball's left edge hasn't passed platform's right edge
+                ) {
+                    ballY = platform.y - ballRadius; // Snap ball to top of platform
+                    ballDY = currentJumpStrength; // Initiate automatic jump with current dynamic jumpStrength
+                    isJumping = true; 
+                    score += 10; 
+                    gameScoreDisplay.textContent = `Score: ${score}`;
+                }
+
+                // Remove platforms that are off-screen (moved past the left edge)
+                if (platform.x + platform.width < 0) {
+                    platforms.splice(i, 1);
+                }
+            }
+
+            // Check if ball falls off screen (Game Over)
+            if (ballY - ballRadius > canvas.height) {
+                endGame();
+                return;
+            }
+
+            gameFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        // Toggle visualization frame and minigame
+        toggleVisualization.addEventListener('change', () => {
+            if (toggleVisualization.checked) {
+                visualizationFrame.classList.add('active');
+                initializePlatformGame(); // Initialize the game when the visualization frame is shown
+            } else {
+                visualizationFrame.classList.remove('active');
+                pausePlatformGame(); // Pause game when frame is hidden
+            }
+        });
+
+        // Start Minigame Button - Consolidated logic
+        minigameStartButton.addEventListener('click', () => {
+            if (!platformGameRunning && !platformGameOver) { // Game is not running and not over (initial start or resumed after game over)
+                startPlatformGame();
+                minigameStartButton.textContent = "⏸️ Pause Game";
+            } else if (platformGameRunning) { // Game is currently running, so pause it
+                pausePlatformGame();
+            } else if (platformGameOver) { // Game is over, so restart it
+                initializePlatformGame(); // Reset game state
+                startPlatformGame(); // Start the game again
+                minigameStartButton.textContent = "⏸️ Pause Game";
+            }
+        });
+
+
+        // Initial setup on window load
+        window.onload = () => {
+            // Initial setup for DJ app elements
+            checkSyncedKicks(); // Start the continuous sync check loop
+            // No need to call initializePlatformGame here, it's called when visualization frame is toggled or minigame start button is clicked
+        };
+    </script>
+</body>
+</html>
