@@ -648,7 +648,7 @@
         <div class="absolute" style="bottom: 120px; left: 50%; transform: translateX(-50%); z-index: 60;">
             <label for="toggleVisualization" class="inline-flex items-center cursor-pointer">
                 <input type="checkbox" id="toggleVisualization" class="sr-only peer">
-                <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:st`art-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
                 <span class="ms-3 text-sm font-medium text-gray-900 dark:text-gray-300">Show Visualization</span>
             </label>
         </div>
@@ -686,7 +686,7 @@
 
         // Get references to jog wheels
         const jogWheel1 = document.getElementById('jog-wheel-1');
-        const jogWheel2 = document.getElementById('jog-wheel-2');
+        const jogWheel2 = document.getElementById('jog-wheel-2'); // Corrected to use 'jog-wheel-2' ID
 
         // Get references to the beat visualizer containers and their inner wrappers
         const beatVisualizer1 = document.getElementById('beat-visualizer-1');
@@ -758,9 +758,9 @@
         const BPM_TOLERANCE = 0.5;
         const VISUALIZATION_DURATION_MS = 200; // Duration in milliseconds that the visual kick pulse is active
 
-        // Initial base BPMs for each track
-        const initialBaseBPM1 = 145;
-        const initialBaseBPM2 = 130;
+        // Initial base BPMs for each track (made 'let' for dynamic updating)
+        let initialBaseBPM1 = 145; // Default/fallback
+        let initialBaseBPM2 = 130; // Default/fallback
 
         // Define the BPM range for sliders (+- 16 BPM)
         const BPM_RANGE = 16;
@@ -935,11 +935,12 @@
             beatBarsWrapper.style.transform += ` scaleX(${scaleFactor})`;
 
             // Highlighting logic
-            const currentSubBeatIndex = Math.floor(currentBeatTime);
             for (let i = 0; i < beatBarsWrapper.children.length; i++) {
                 const bar = beatBarsWrapper.children[i];
                 bar.classList.remove('active-beat', 'next-beat'); // Remove previous highlights
             }
+
+            const currentSubBeatIndex = Math.floor(currentBeatTime);
 
             // Highlight the active beat
             if (beatBarsWrapper.children[currentSubBeatIndex]) {
@@ -975,68 +976,340 @@
             window[animationFrameVariableName] = requestAnimationFrame(animate);
         }
 
+        // Helper to get BPM from audio (assuming you have a way to detect/set it)
+        function getBPMFromAudio(audio) {
+            // For this mockup, we'll use the value from the BPM slider.
+            if (audio.id === 'audio1') {
+                return parseFloat(bpmValue1.textContent);
+            } else if (audio.id === 'audio2') {
+                return parseFloat(bpmValue2.textContent);
+            }
+            return 120; // Default BPM if not found
+        }
 
-        // Event Listeners for Play/Pause buttons
+        // Add new variables for jog wheel state
+        let jogWheelState1 = {
+            isDragging: false,
+            startAngle: 0,
+            startMouseX: 0,
+            startMouseY: 0,
+            currentRotation: 0,
+            lastAngle: 0,
+            nudgeTimeout: null,
+            audioElement: audio1,
+            bpmValueElement: bpmValue1,
+            beatBarsWrapper: beatBarsWrapper1,
+            timeoutsArray: beatHighlightTimeouts1,
+            animationFrameId: null, // For beat visualizer
+            animationFrameRotationId: null, // NEW: For jog wheel continuous rotation
+            lastRotationTime: 0, // NEW: For continuous rotation calculation
+            currentNumMainBeatsDisplayed: currentNumMainBeatsDisplayed1
+        };
+
+        let jogWheelState2 = {
+            isDragging: false,
+            startAngle: 0,
+            startMouseX: 0,
+            startMouseY: 0,
+            currentRotation: 0,
+            lastAngle: 0,
+            nudgeTimeout: null,
+            audioElement: audio2,
+            bpmValueElement: bpmValue2,
+            beatBarsWrapper: beatBarsWrapper2,
+            timeoutsArray: beatHighlightTimeouts2,
+            animationFrameId: null, // For beat visualizer
+            animationFrameRotationId: null, // NEW: For jog wheel continuous rotation
+            lastRotationTime: 0, // NEW: For continuous rotation calculation
+            currentNumMainBeatsDisplayed: currentNumMainMainBeatsDisplayed2
+        };
+
+        // NEW: Function to update jog wheel rotation based on audio playback
+        function updateJogWheelRotation(jogWheelElement, jogState, timestamp) {
+            if (jogState.isDragging || jogState.audioElement.paused) {
+                jogState.lastRotationTime = timestamp; // Reset last time when paused or dragging
+                jogState.animationFrameRotationId = requestAnimationFrame((ts) => updateJogWheelRotation(jogWheelElement, jogState, ts));
+                return;
+            }
+
+            if (!jogState.lastRotationTime) {
+                jogState.lastRotationTime = timestamp;
+            }
+
+            const elapsed = timestamp - jogState.lastRotationTime;
+            const bpm = parseFloat(jogState.bpmValueElement.textContent);
+            const playbackRate = jogState.audioElement.playbackRate;
+
+            // Calculate degrees per millisecond for a slower rotation (e.g., 1 revolution every 4 beats)
+            const beatsPerRevolution = 4; // Number of main beats for one full jog wheel revolution
+            const msPerRevolution = ((60 / bpm) * 1000) * beatsPerRevolution;
+            const degreesPerMs = (360 / msPerRevolution) * playbackRate;
+
+            const rotationAmount = degreesPerMs * elapsed;
+            jogState.currentRotation += rotationAmount;
+
+            // Keep rotation within a reasonable range to prevent massive numbers
+            jogState.currentRotation %= 360;
+
+            jogWheelElement.style.transform = `rotate(${jogState.currentRotation}deg)`;
+            jogState.lastRotationTime = timestamp;
+
+            jogState.animationFrameRotationId = requestAnimationFrame((ts) => updateJogWheelRotation(jogWheelElement, jogState, ts));
+        }
+
+
+        // Function to calculate angle from center of an element
+        function getAngle(event, element) {
+            const rect = element.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const mouseX = event.clientX || (event.touches ? event.touches[0].clientX : centerX); // Fallback for touch if no clientX
+            const mouseY = event.clientY || (event.touches ? event.touches[0].clientY : centerY); // Fallback for touch if no clientY
+            return Math.atan2(mouseY - centerY, mouseX - centerX) * (180 / Math.PI);
+        }
+
+        // Function to start jog wheel drag
+        function startJogDrag(event, jogWheelElement, jogState) {
+            jogState.isDragging = true;
+            jogState.startAngle = getAngle(event, jogWheelElement);
+            jogState.lastAngle = jogState.startAngle;
+            jogWheelElement.style.cursor = 'grabbing';
+            event.preventDefault(); // Prevent default browser behavior like text selection
+
+            // NEW: Stop automatic rotation when dragging starts
+            if (jogState.animationFrameRotationId) {
+                cancelAnimationFrame(jogState.animationFrameRotationId);
+                jogState.animationFrameRotationId = null;
+            }
+        }
+
+        // Function to handle jog wheel drag
+        function handleJogDrag(event, jogWheelElement, jogState) {
+            if (!jogState.isDragging) return;
+
+            const currentAngle = getAngle(event, jogWheelElement);
+            let deltaAngle = currentAngle - jogState.lastAngle;
+
+            // Handle angle wrap-around (e.g., going from 170 to -170 degrees)
+            if (deltaAngle > 180) {
+                deltaAngle -= 360;
+            } else if (deltaAngle < -180) {
+                deltaAngle += 360;
+            }
+
+            jogState.currentRotation += deltaAngle;
+            jogWheelElement.style.transform = `rotate(${jogState.currentRotation}deg)`;
+
+            // Audio manipulation (Nudging/Scratching)
+            if (!jogState.audioElement.paused) {
+                const bpm = parseFloat(jogState.bpmValueElement.textContent);
+                const nudgeSensitivity = 0.0005; // How much a small rotation affects playback rate
+                const scratchThreshold = 5; // Degrees per frame to trigger scratch
+
+                if (Math.abs(deltaAngle) > scratchThreshold) {
+                    // Basic scratching effect: jump time
+                    const timeJump = deltaAngle * (bpm / 120) * 0.005; // Adjust jump based on BPM and rotation
+                    jogState.audioElement.currentTime += timeJump;
+                } else {
+                    // Nudging effect: temporary pitch bend
+                    if (jogState.nudgeTimeout) clearTimeout(jogState.nudgeTimeout);
+
+                    // Ensure initialBaseBPM is used correctly for the respective audio element
+                    const originalBaseBPM = (jogState.audioElement === audio1) ? initialBaseBPM1 : initialBaseBPM2;
+                    const originalPlaybackRate = bpm / originalBaseBPM;
+                    const newPlaybackRate = originalPlaybackRate + (deltaAngle * nudgeSensitivity);
+
+                    // Clamp playback rate to prevent extreme values
+                    jogState.audioElement.playbackRate = Math.max(0.5, Math.min(2.0, newPlaybackRate));
+
+                    jogState.nudgeTimeout = setTimeout(() => {
+                        jogState.audioElement.playbackRate = originalPlaybackRate; // Return to original rate
+                    }, 100); // Nudge effect duration
+                }
+
+                // Update beat visualization after jog wheel interaction
+                updateBeatVisualization(jogState.audioElement, jogState.beatBarsWrapper, jogState.timeoutsArray, jogState.currentNumMainBeatsDisplayed);
+            }
+
+            jogState.lastAngle = currentAngle;
+        }
+
+        // Function to end jog wheel drag
+        function endJogDrag(jogWheelElement, jogState) {
+            jogState.isDragging = false;
+            jogWheelElement.style.cursor = 'grab';
+            if (jogState.nudgeTimeout) {
+                clearTimeout(jogState.nudgeTimeout);
+                // Ensure playback rate returns to normal after drag ends
+                const bpm = parseFloat(jogState.bpmValueElement.textContent);
+                const originalBaseBPM = (jogState.audioElement === audio1) ? initialBaseBPM1 : initialBaseBPM2;
+                jogState.audioElement.playbackRate = bpm / originalBaseBPM;
+            }
+            // NEW: Resume automatic rotation after drag ends, if audio is playing
+            if (!jogState.audioElement.paused && !jogState.animationFrameRotationId) {
+                jogState.lastRotationTime = performance.now(); // Reset time for smooth restart
+                jogState.animationFrameRotationId = requestAnimationFrame((ts) => updateJogWheelRotation(jogWheelElement, jogState, ts));
+            }
+        }
+
+        // Event listeners for Jog Wheel 1
+        jogWheel1.addEventListener('mousedown', (e) => startJogDrag(e, jogWheel1, jogWheelState1));
+        document.addEventListener('mousemove', (e) => handleJogDrag(e, jogWheel1, jogWheelState1));
+        document.addEventListener('mouseup', () => endJogDrag(jogWheel1, jogWheelState1));
+
+        // Add touch events for mobile
+        jogWheel1.addEventListener('touchstart', (e) => startJogDrag(e, jogWheel1, jogWheelState1));
+        document.addEventListener('touchmove', (e) => handleJogDrag(e, jogWheel1, jogWheelState1));
+        document.addEventListener('touchend', () => endJogDrag(jogWheel1, jogWheelState1));
+
+        // Event listeners for Jog Wheel 2
+        jogWheel2.addEventListener('mousedown', (e) => startJogDrag(e, jogWheel2, jogWheelState2));
+        document.addEventListener('mousemove', (e) => handleJogDrag(e, jogWheel2, jogWheelState2));
+        document.addEventListener('mouseup', () => endJogDrag(jogWheel2, jogWheelState2));
+
+        // Add touch events for mobile
+        jogWheel2.addEventListener('touchstart', (e) => startJogDrag(e, jogWheel2, jogWheelState2));
+        document.addEventListener('touchmove', (e) => handleJogDrag(e, jogWheel2, jogWheelState2));
+        document.addEventListener('touchend', () => endJogDrag(jogWheel2, jogWheelState2));
+
+        // Event Listeners for Play/Pause
         playPause1.addEventListener('click', () => {
             if (audio1.paused) {
                 audio1.play();
-                playPause1.textContent = '⏸️ PAUSE A';
-                // Start kick animation and beat visualization for audio1
+                playPause1.innerHTML = '⏸️ PAUSE A';
+                // Using kickPulse1 (which is beatVisualizer1) as the target for the kick pulse effect
                 startKickAnimationInterval(audio1, kickPulse1, 'kickInterval1', parseFloat(bpmValue1.textContent));
                 startBeatVisualizationLoop(audio1, beatBarsWrapper1, beatHighlightTimeouts1, 'animationFrameId1', currentNumMainBeatsDisplayed1);
+                // NEW: Start jog wheel rotation when playing
+                jogWheelState1.lastRotationTime = performance.now(); // Reset time
+                jogWheelState1.animationFrameRotationId = requestAnimationFrame((ts) => updateJogWheelRotation(jogWheel1, jogWheelState1, ts));
             } else {
                 audio1.pause();
-                playPause1.textContent = '▶️ PLAY A';
-                // Stop kick animation and beat visualization for audio1
+                playPause1.innerHTML = '▶️ PLAY A';
                 clearInterval(kickInterval1);
-                cancelAnimationFrame(animationFrameId1);
+                cancelAnimationFrame(jogWheelState1.animationFrameId); // For beat visualizer
+                // NEW: Stop jog wheel rotation when paused
+                if (jogWheelState1.animationFrameRotationId) {
+                    cancelAnimationFrame(jogWheelState1.animationFrameRotationId);
+                    jogWheelState1.animationFrameRotationId = null;
+                }
+                clearBeatHighlightTimeouts(beatHighlightTimeouts1);
             }
-            // Update platform dynamics only if the game is active
+             // Update platform dynamics if the game is active
             if (platformGameRunning) {
-                 updatePlatformDynamics();
+                 updateAllPlatformDynamics();
             }
         });
 
         playPause2.addEventListener('click', () => {
             if (audio2.paused) {
                 audio2.play();
-                playPause2.textContent = '⏸️ PAUSE B';
-                // Start kick animation and beat visualization for audio2
+                playPause2.innerHTML = '⏸️ PAUSE B';
+                // Using kickPulse2 (which is beatVisualizer2) as the target for the kick pulse effect
                 startKickAnimationInterval(audio2, kickPulse2, 'kickInterval2', parseFloat(bpmValue2.textContent));
                 startBeatVisualizationLoop(audio2, beatBarsWrapper2, beatHighlightTimeouts2, 'animationFrameId2', currentNumMainMainBeatsDisplayed2);
+                // NEW: Start jog wheel rotation when playing
+                jogWheelState2.lastRotationTime = performance.now(); // Reset time
+                jogWheelState2.animationFrameRotationId = requestAnimationFrame((ts) => updateJogWheelRotation(jogWheel2, jogWheelState2, ts));
             } else {
                 audio2.pause();
-                playPause2.textContent = '▶️ PLAY B';
-                // Stop kick animation and beat visualization for audio2
+                playPause2.innerHTML = '▶️ PLAY B';
                 clearInterval(kickInterval2);
-                cancelAnimationFrame(animationFrameId2);
+                cancelAnimationFrame(jogWheelState2.animationFrameId); // For beat visualizer
+                // NEW: Stop jog wheel rotation when paused
+                if (jogWheelState2.animationFrameRotationId) {
+                    cancelAnimationFrame(jogWheelState2.animationFrameRotationId);
+                    jogWheelState2.animationFrameRotationId = null;
+                }
+                clearBeatHighlightTimeouts(beatHighlightTimeouts2);
+            }
+             // Update platform dynamics if the game is active
+            if (platformGameRunning) {
+                updateAllPlatformDynamics();
             }
         });
 
         // Event Listeners for CUE buttons
         cue1Button.addEventListener('click', () => {
-            cuePoint1 = audio1.currentTime;
-            console.log(`CUE point for Audio 1 set at: ${cuePoint1.toFixed(2)} seconds`);
+            audio1.pause(); // Pause on CUE
+            playPause1.innerHTML = '▶️ PLAY A';
+            clearInterval(kickInterval1);
+            cancelAnimationFrame(jogWheelState1.animationFrameId);
+            if (jogWheelState1.animationFrameRotationId) { // Stop jog wheel rotation
+                cancelAnimationFrame(jogWheelState1.animationFrameRotationId);
+                jogWheelState1.animationFrameRotationId = null;
+            }
+            clearBeatHighlightTimeouts(beatHighlightTimeouts1);
+
+            audio1.currentTime = cuePoint1; // Go to cue point
+            console.log(`CUE L set to: ${cuePoint1.toFixed(2)}s. Now at CUE L.`);
         });
 
         cue2Button.addEventListener('click', () => {
-            cuePoint2 = audio2.currentTime;
-            console.log(`CUE point for Audio 2 set at: ${cuePoint2.toFixed(2)} seconds`);
+            audio2.pause(); // Pause on CUE
+            playPause2.innerHTML = '▶️ PLAY B';
+            clearInterval(kickInterval2);
+            cancelAnimationFrame(jogWheelState2.animationFrameId);
+            if (jogWheelState2.animationFrameRotationId) { // Stop jog wheel rotation
+                cancelAnimationFrame(jogWheelState2.animationFrameRotationId);
+                jogWheelState2.animationFrameRotationId = null;
+            }
+            clearBeatHighlightTimeouts(beatHighlightTimeouts2);
+
+            audio2.currentTime = cuePoint2; // Go to cue point
+            console.log(`CUE R set to: ${cuePoint2.toFixed(2)}s. Now at CUE R.`);
         });
 
-        // Event Listener for "Play All" debug button
+
+        // "Play All" Debug Button
         debugPlayAllButton.addEventListener('click', () => {
-            audio1.play();
-            audio2.play();
-            playPause1.textContent = '⏸️ PAUSE A';
-            playPause2.textContent = '⏸️ PAUSE B';
-            startKickAnimationInterval(audio1, kickPulse1, 'kickInterval1', parseFloat(bpmValue1.textContent));
-            startBeatVisualizationLoop(audio1, beatBarsWrapper1, beatHighlightTimeouts1, 'animationFrameId1', currentNumMainBeatsDisplayed1);
-            startKickAnimationInterval(audio2, kickPulse2, 'kickInterval2', parseFloat(bpmValue2.textContent));
-            startBeatVisualizationLoop(audio2, beatBarsWrapper2, beatHighlightTimeouts2, 'animationFrameId2', currentNumMainMainBeatsDisplayed2);
-            // Update platform dynamics only if the game is active
+            const isAudio1Playing = !audio1.paused;
+            const isAudio2Playing = !audio2.paused;
+
+            if (isAudio1Playing && isAudio2Playing) {
+                // Both playing, stop both
+                audio1.pause();
+                audio2.pause();
+                playPause1.innerHTML = '▶️ PLAY A';
+                playPause2.innerHTML = '▶️ PLAY B';
+                clearInterval(kickInterval1);
+                clearInterval(kickInterval2);
+                cancelAnimationFrame(jogWheelState1.animationFrameId);
+                cancelAnimationFrame(jogWheelState2.animationFrameId);
+                if (jogWheelState1.animationFrameRotationId) { // Stop jog wheel rotation
+                    cancelAnimationFrame(jogWheelState1.animationFrameRotationId);
+                    jogWheelState1.animationFrameRotationId = null;
+                }
+                if (jogWheelState2.animationFrameRotationId) { // Stop jog wheel rotation
+                    cancelAnimationFrame(jogWheelState2.animationFrameRotationId);
+                    jogWheelState2.animationFrameRotationId = null;
+                }
+                clearBeatHighlightTimeouts(beatHighlightTimeouts1);
+                clearBeatHighlightTimeouts(beatHighlightTimeouts2);
+            } else {
+                // At least one is paused, play both from cue points
+                if (audio1.paused) {
+                    audio1.currentTime = cuePoint1; // Go to cue point
+                    audio1.play();
+                    playPause1.innerHTML = '⏸️ PAUSE A';
+                    startKickAnimationInterval(audio1, kickPulse1, 'kickInterval1', parseFloat(bpmValue1.textContent));
+                    startBeatVisualizationLoop(audio1, beatBarsWrapper1, beatHighlightTimeouts1, 'animationFrameId1', currentNumMainBeatsDisplayed1);
+                    jogWheelState1.lastRotationTime = performance.now();
+                    jogWheelState1.animationFrameRotationId = requestAnimationFrame((ts) => updateJogWheelRotation(jogWheel1, jogWheelState1, ts));
+                }
+                if (audio2.paused) {
+                    audio2.currentTime = cuePoint2; // Go to cue point
+                    audio2.play();
+                    playPause2.innerHTML = '⏸️ PAUSE B';
+                    startKickAnimationInterval(audio2, kickPulse2, 'kickInterval2', parseFloat(bpmValue2.textContent));
+                    startBeatVisualizationLoop(audio2, beatBarsWrapper2, beatHighlightTimeouts2, 'animationFrameId2', currentNumMainMainBeatsDisplayed2);
+                    jogWheelState2.lastRotationTime = performance.now();
+                    jogWheelState2.animationFrameRotationId = requestAnimationFrame((ts) => updateJogWheelRotation(jogWheel2, jogWheelState2, ts));
+                }
+            }
+             // Update platform dynamics if the game is active
             if (platformGameRunning) {
-                updatePlatformDynamics();
+                 updateAllPlatformDynamics();
             }
         });
 
@@ -1044,111 +1317,189 @@
         bpmSlider1.addEventListener('input', () => {
             const newBPM = parseFloat(bpmSlider1.value);
             bpmValue1.textContent = newBPM.toFixed(1);
-            audio1.playbackRate = newBPM / initialBaseBPM1;
-            // Restart kick animation with new BPM if playing
+            audio1.playbackRate = newBPM / initialBaseBPM1; // Adjust playback rate based on original BPM
             if (!audio1.paused) {
                 startKickAnimationInterval(audio1, kickPulse1, 'kickInterval1', newBPM);
+                startBeatVisualizationLoop(audio1, beatBarsWrapper1, beatHighlightTimeouts1, 'animationFrameId1', currentNumMainBeatsDisplayed1);
+                // NEW: Restart jog wheel rotation to reflect new BPM/playback rate
+                if (jogWheelState1.animationFrameRotationId) {
+                    cancelAnimationFrame(jogWheelState1.animationFrameRotationId);
+                }
+                jogWheelState1.lastRotationTime = performance.now();
+                jogWheelState1.animationFrameRotationId = requestAnimationFrame((ts) => updateJogWheelRotation(jogWheel1, jogWheelState1, ts));
             }
-            // Update platform dynamics only if the game is active
+            // Update platform dynamics if the game is active
             if (platformGameRunning) {
-                 updatePlatformDynamics();
+                 updateAllPlatformDynamics();
             }
         });
 
         bpmSlider2.addEventListener('input', () => {
             const newBPM = parseFloat(bpmSlider2.value);
             bpmValue2.textContent = newBPM.toFixed(1);
-            audio2.playbackRate = newBPM / initialBaseBPM2;
-            // Restart kick animation with new BPM if playing
+            audio2.playbackRate = newBPM / initialBaseBPM2; // Adjust playback rate based on original BPM
             if (!audio2.paused) {
                 startKickAnimationInterval(audio2, kickPulse2, 'kickInterval2', newBPM);
+                startBeatVisualizationLoop(audio2, beatBarsWrapper2, beatHighlightTimeouts2, 'animationFrameId2', currentNumMainMainBeatsDisplayed2);
+                // NEW: Restart jog wheel rotation to reflect new BPM/playback rate
+                if (jogWheelState2.animationFrameRotationId) {
+                    cancelAnimationFrame(jogWheelState2.animationFrameRotationId);
+                }
+                jogWheelState2.lastRotationTime = performance.now();
+                jogWheelState2.animationFrameRotationId = requestAnimationFrame((ts) => updateJogWheelRotation(jogWheel2, jogWheelState2, ts));
+            }
+            // Update platform dynamics if the game is active
+            if (platformGameRunning) {
+                updateAllPlatformDynamics();
             }
         });
 
-        // Event Listeners for SYNC buttons
+        // Event Listeners for SYNC buttons (simple BPM matching for mockup)
         sync1.addEventListener('click', () => {
-            const currentBPM2 = parseFloat(bpmValue2.textContent);
-            bpmSlider1.value = currentBPM2.toFixed(1);
-            bpmValue1.textContent = currentBPM2.toFixed(1);
-            audio1.playbackRate = currentBPM2 / initialBaseBPM1;
+            const targetBPM = parseFloat(bpmValue2.textContent);
+            bpmSlider1.value = targetBPM.toFixed(1);
+            bpmValue1.textContent = targetBPM.toFixed(1);
+            audio1.playbackRate = targetBPM / initialBaseBPM1;
             if (!audio1.paused) {
-                startKickAnimationInterval(audio1, kickPulse1, 'kickInterval1', currentBPM2);
+                startKickAnimationInterval(audio1, kickPulse1, 'kickInterval1', targetBPM);
+                startBeatVisualizationLoop(audio1, beatBarsWrapper1, beatHighlightTimeouts1, 'animationFrameId1', currentNumMainBeatsDisplayed1);
+                // NEW: Restart jog wheel rotation to reflect new BPM/playback rate
+                if (jogWheelState1.animationFrameRotationId) {
+                    cancelAnimationFrame(jogWheelState1.animationFrameRotationId);
+                }
+                jogWheelState1.lastRotationTime = performance.now();
+                jogWheelState1.animationFrameRotationId = requestAnimationFrame((ts) => updateJogWheelRotation(jogWheel1, jogWheelState1, ts));
             }
-            // Update platform dynamics only if the game is active
+            // Update platform dynamics if the game is active
             if (platformGameRunning) {
-                 updatePlatformDynamics();
+                 updateAllPlatformDynamics();
             }
         });
 
         sync2.addEventListener('click', () => {
-            const currentBPM1 = parseFloat(bpmValue1.textContent);
-            bpmSlider2.value = currentBPM1.toFixed(1);
-            bpmValue2.textContent = currentBPM1.toFixed(1);
-            audio2.playbackRate = currentBPM1 / initialBaseBPM2;
+            const targetBPM = parseFloat(bpmValue1.textContent);
+            bpmSlider2.value = targetBPM.toFixed(1);
+            bpmValue2.textContent = targetBPM.toFixed(1);
+            audio2.playbackRate = targetBPM / initialBaseBPM2;
             if (!audio2.paused) {
-                startKickAnimationInterval(audio2, kickPulse2, 'kickInterval2', currentBPM1);
+                startKickAnimationInterval(audio2, kickPulse2, 'kickInterval2', targetBPM);
+                startBeatVisualizationLoop(audio2, beatBarsWrapper2, beatHighlightTimeouts2, 'animationFrameId2', currentNumMainMainBeatsDisplayed2);
+                // NEW: Restart jog wheel rotation to reflect new BPM/playback rate
+                if (jogWheelState2.animationFrameRotationId) {
+                    cancelAnimationFrame(jogWheelState2.animationFrameRotationId);
+                }
+                jogWheelState2.lastRotationTime = performance.now();
+                jogWheelState2.animationFrameRotationId = requestAnimationFrame((ts) => updateJogWheelRotation(jogWheel2, jogWheelState2, ts));
+            }
+            // Update platform dynamics if the game is active
+            if (platformGameRunning) {
+                updateAllPlatformDynamics();
             }
         });
 
-        // Event Listener for Crossfader
+        // Crossfader logic
         crossfader.addEventListener('input', () => {
             const value = parseFloat(crossfader.value);
             audio1.volume = 1 - value;
             audio2.volume = value;
+
+            // Calculate glow intensity based on volume
+            const glowIntensityLeft = (1 - value).toFixed(2); // Invert for left channel
+            const glowIntensityRight = value.toFixed(2); // Direct for right channel
+
+            // Apply glow to left beat visualizer
+            beatVisualizer1.classList.add('glow-left');
+            beatVisualizer1.style.setProperty('--glow-intensity-left', glowIntensityLeft);
+            if (glowIntensityLeft == 0) {
+                beatVisualizer1.classList.remove('glow-left');
+            }
+
+            // Apply glow to right beat visualizer
+            beatVisualizer2.classList.add('glow-right');
+            beatVisualizer2.style.setProperty('--glow-intensity-right', glowIntensityRight);
+            if (glowIntensityRight == 0) {
+                beatVisualizer2.classList.remove('glow-right');
+            }
         });
 
-        // Helper function to get actual BPM from audio (considering playbackRate)
-        function getBPMFromAudio(audio) {
-            if (audio.id === 'audio1') {
-                return parseFloat(bpmValue1.textContent);
-            } else if (audio.id === 'audio2') {
-                return parseFloat(bpmValue2.textContent);
+        // Initial setup for beat visualization
+        const initialVisualizerWidth = beatVisualizer1.offsetWidth || 200; 
+        generateBeatBars(beatBarsWrapper1, TOTAL_GENERATED_SUB_BEATS / SUB_BEATS_PER_MAIN_BEAT, SUB_BEATS_PER_MAIN_BEAT, initialVisualizerWidth);
+        generateBeatBars(beatBarsWrapper2, TOTAL_GENERATED_SUB_BEATS / SUB_BEATS_PER_MAIN_BEAT, SUB_BEATS_PER_MAIN_BEAT, initialVisualizerWidth);
+
+        // Zoom functionality
+        function applyZoom(trackNum, direction) {
+            let currentZoomLevelIndex;
+            let currentNumMainBeatsDisplayed;
+            let beatBarsWrapper;
+            let audio;
+            let timeoutsArray;
+            let jogState;
+
+            if (trackNum === 1) {
+                currentZoomLevelIndex = ZOOM_LEVELS.indexOf(currentNumMainBeatsDisplayed1);
+                currentNumMainBeatsDisplayed = currentNumMainBeatsDisplayed1;
+                beatBarsWrapper = beatBarsWrapper1;
+                audio = audio1;
+                timeoutsArray = beatHighlightTimeouts1;
+                jogState = jogWheelState1;
+            } else {
+                currentZoomLevelIndex = ZOOM_LEVELS.indexOf(currentNumMainMainBeatsDisplayed2);
+                currentNumMainMainBeatsDisplayed = currentNumMainMainBeatsDisplayed2;
+                beatBarsWrapper = beatBarsWrapper2;
+                audio = audio2;
+                timeoutsArray = beatHighlightTimeouts2;
+                jogState = jogWheelState2;
             }
-            return 0;
+
+            if (direction === 'in' && currentZoomLevelIndex < ZOOM_LEVELS.length - 1) {
+                currentZoomLevelIndex++;
+            } else if (direction === 'out' && currentZoomLevelIndex > 0) {
+                currentZoomLevelIndex--;
+            }
+            
+            const newNumMainBeatsDisplayed = ZOOM_LEVELS[currentZoomLevelIndex];
+            
+            if (trackNum === 1) {
+                currentNumMainBeatsDisplayed1 = newNumMainBeatsDisplayed;
+                jogWheelState1.currentNumMainBeatsDisplayed = newNumMainBeatsDisplayed;
+            } else {
+                currentNumMainMainBeatsDisplayed2 = newNumMainBeatsDisplayed;
+                jogWheelState2.currentNumMainBeatsDisplayed = newNumMainBeatsDisplayed;
+            }
+            
+            generateBeatBars(beatBarsWrapper, TOTAL_GENERATED_SUB_BEATS / SUB_BEATS_PER_MAIN_BEAT, SUB_BEATS_PER_MAIN_BEAT, beatBarsWrapper.parentElement.offsetWidth);
+            if (!audio.paused) {
+                startBeatVisualizationLoop(audio, beatBarsWrapper, timeoutsArray, jogState.animationFrameId === animationFrameId1 ? 'animationFrameId1' : 'animationFrameId2', newNumMainBeatsDisplayed);
+            }
         }
 
-        // Event Listeners for Zoom Buttons
-        zoomIn1.addEventListener('click', () => {
-            let currentIndex = ZOOM_LEVELS.indexOf(currentNumMainBeatsDisplayed1);
-            if (currentIndex < ZOOM_LEVELS.length - 1) {
-                currentNumMainBeatsDisplayed1 = ZOOM_LEVELS[currentIndex + 1];
-                generateBeatBars(beatBarsWrapper1, currentNumMainBeatsDisplayed1, SUB_BEATS_PER_MAIN_BEAT, beatVisualizer1.offsetWidth);
-                startBeatVisualizationLoop(audio1, beatBarsWrapper1, beatHighlightTimeouts1, 'animationFrameId1', currentNumMainBeatsDisplayed1);
-            }
-        });
+        zoomIn1.addEventListener('click', () => applyZoom(1, 'in'));
+        zoomOut1.addEventListener('click', () => applyZoom(1, 'out'));
+        zoomIn2.addEventListener('click', () => applyZoom(2, 'in'));
+        zoomOut2.addEventListener('click', () => applyZoom(2, 'out'));
 
-        zoomOut1.addEventListener('click', () => {
-            let currentIndex = ZOOM_LEVELS.indexOf(currentNumMainBeatsDisplayed1);
-            if (currentIndex > 0) {
-                currentNumMainBeatsDisplayed1 = ZOOM_LEVELS[currentIndex - 1];
-                generateBeatBars(beatBarsWrapper1, currentNumMainBeatsDisplayed1, SUB_BEATS_PER_MAIN_BEAT, beatVisualizer1.offsetWidth);
-                startBeatVisualizationLoop(audio1, beatBarsWrapper1, beatHighlightTimeouts1, 'animationFrameId1', currentNumMainBeatsDisplayed1);
-            }
-        });
+        // NEW: Function to set up the SVG trace properties
+        function setupJogTrace(circleElement) {
+            const radius = parseFloat(circleElement.getAttribute('r'));
+            const circumference = 2 * Math.PI * radius;
+            
+            // "6 bars" means roughly 1/6th of the circle's circumference
+            const dashLength = circumference / 6;
+            const gapLength = circumference - dashLength;
 
-        zoomIn2.addEventListener('click', () => {
-            let currentIndex = ZOOM_LEVELS.indexOf(currentNumMainMainBeatsDisplayed2);
-            if (currentIndex < ZOOM_LEVELS.length - 1) {
-                currentNumMainMainBeatsDisplayed2 = ZOOM_LEVELS[currentIndex + 1];
-                generateBeatBars(beatBarsWrapper2, currentNumMainMainBeatsDisplayed2, SUB_BEATS_PER_MAIN_BEAT, beatVisualizer2.offsetWidth);
-                startBeatVisualizationLoop(audio2, beatBarsWrapper2, beatHighlightTimeouts2, 'animationFrameId2', currentNumMainMainBeatsDisplayed2);
-            }
-        });
+            circleElement.style.strokeDasharray = `${dashLength} ${gapLength}`;
+            // Position the trace so its center is at the top (after SVG rotation -90deg)
+            // The -90deg transform on SVG makes the 0-degree point of the circle (usually right-most)
+            // appear at the top. So, to center a dash of length `dashLength` at this 0-degree point,
+            // we need to offset it by half its length.
+            circleElement.style.strokeDashoffset = `${-dashLength / 2}`;
+        }
 
-        zoomOut2.addEventListener('click', () => {
-            let currentIndex = ZOOM_LEVELS.indexOf(currentNumMainMainBeatsDisplayed2);
-            if (currentIndex > 0) {
-                currentNumMainMainBeatsDisplayed2 = ZOOM_LEVELS[currentIndex - 1];
-                generateBeatBars(beatBarsWrapper2, currentNumMainMainBeatsDisplayed2, SUB_BEATS_PER_MAIN_BEAT, beatVisualizer2.offsetWidth);
-                startBeatVisualizationLoop(audio2, beatBarsWrapper2, beatHighlightTimeouts2, 'animationFrameId2', currentNumMainMainBeatsDisplayed2);
-            }
-        } );
+        // Call setup for both jog traces when the script loads
+        setupJogTrace(jogTraceCircle1);
+        setupJogTrace(jogTraceCircle2);
 
-        // Initial beat bars generation on load
-        window.addEventListener('load', () => {
-            generateBeatBars(beatBarsWrapper1, currentNumMainBeatsDisplayed1, SUB_BEATS_PER_MAIN_BEAT, beatVisualizer1.offsetWidth);
-            generateBeatBars(beatBarsWrapper2, currentNumMainMainBeatsDisplayed2, SUB_BEATS_PER_MAIN_BEAT, beatVisualizer2.offsetWidth);
-        });
 
         // Minigame Variables
         const canvas = document.getElementById('platformGameCanvas');
@@ -1158,12 +1509,12 @@
         let ballX, ballY, ballDY; // X position, Y position, Y velocity
         
         // Base values for dynamic adjustments
-        const baseJumpStrength = -4.5; // Adjusted slightly for game feel
-        const baseGravity = 0.25; // Adjusted slightly for game feel
-        let currentJumpStrength = baseJumpStrength; // Will be dynamically updated
-        let currentGravity = baseGravity; // Will be dynamically updated
+        const baseJumpStrength = -14.0; // Adjusted for 1-beat jump at 120 BPM
+        const baseGravity = 1.2; 
+        let currentJumpStrength = baseJumpStrength; // Will be dynamically updated (controlled by Track 1)
+        let currentGravity = baseGravity; // Will be dynamically updated (controlled by Track 1)
 
-        const platformY = canvas.height * 0.75; // Fixed Y position for platforms
+        let platformY; // Will be calculated in initializePlatformGame based on current canvas height
         let isJumping = false;
         let score = 0;
         let platformGameRunning = false;
@@ -1172,17 +1523,21 @@
         // Platform constants
         const PLATFORM_WIDTH = 20; 
         const PLATFORM_HEIGHT = 7;
-        const REFERENCE_BPM_FOR_PLATFORMS = 120; // Reference BPM for platform spacing/speed
+        const REFERENCE_BPM_FOR_PLATFORMS = 145; // Reference BPM for platform spacing/speed - NOW MATCHES initialBaseBPM1
         // This is the total horizontal space one platform + its intended gap occupies at REFERENCE_BPM_FOR_PLATFORMS
         const TARGET_PLATFORM_SPACING_PX_AT_REFERENCE_BPM = 40; // Pixels per main beat for platforms
 
-        let platforms = []; // Stores platform objects {x, y, width, height, spawnBeatTime}
-        let upcomingPlatforms = []; // Stores planned future platforms {beatIndex, spawned}
+        let platforms = []; // Stores ALL active platform objects {x, y, width, height, spawnBeatTime, trackId, color}
+        let upcomingPlatforms1 = []; // Stores planned future platforms for Track 1 {beatIndex, spawned, trackId}
+        let upcomingPlatforms2 = []; // Stores planned future platforms for Track 2 {beatIndex, spawned, trackId}
+
         const PLATFORM_SPAWN_BEAT_INTERVAL = SUB_BEATS_PER_MAIN_BEAT * 1; // Spawn a platform every main beat (every 4 sub-beats)
         const ANTICIPATION_BEATS = SUB_BEATS_PER_MAIN_BEAT * 4; // Spawn platforms 4 main beats ahead of current audio position
 
-        let pxPerSubBeat = 0; // Dynamic, calculated based on BPM
-
+        // Variables to hold the dynamic properties for each track's platforms
+        let track1PlatformDynamics = { pxPerSubBeat: 0, msPerSubBeat: 0 };
+        let track2PlatformDynamics = { pxPerSubBeat: 0, msPerSubBeat: 0 };
+        
         let gameFrameId; // For requestAnimationFrame
 
         // Minigame UI elements
@@ -1194,56 +1549,51 @@
         function isTrack1Playing() {
             return !audio1.paused;
         }
-
-        // Function to calculate platform speed, generation interval, and jump strength based on BPM of Track 1
-        // Now calculates pxPerSubBeat, jumpStrength, and gravity
-        function calculatePlatformDynamics() {
-            const currentBPM1 = parseFloat(bpmValue1.textContent);
-            const msPerBeat = (60 / currentBPM1) * 1000;
-            const msPerSubBeat = msPerBeat / SUB_BEATS_PER_MAIN_BEAT;
-
-            // Calculate pxPerSubBeat: How many pixels one sub-beat should occupy visually
-            // Scales with BPM: faster BPM means more pixels per sub-beat if we want platforms to appear faster but maintain visual density
-            // Or inverse, if we want them to feel more "cramped" at higher BPMs
-            // Let's make them feel faster/more spaced at higher BPMs
-            const calculatedPxPerSubBeat = (TARGET_PLATFORM_SPACING_PX_AT_REFERENCE_BPM / PLATFORM_SPAWN_BEAT_INTERVAL) * (currentBPM1 / REFERENCE_BPM_FOR_PLATFORMS);
-            
-            // Adjust jump strength and gravity with BPM
-            // Higher BPM = shorter, faster jumps & quicker fall (more challenging)
-            const calculatedJumpStrength = baseJumpStrength * (REFERENCE_BPM_FOR_PLATFORMS / currentBPM1);
-            const calculatedGravity = baseGravity * (currentBPM1 / REFERENCE_BPM_FOR_PLATFORMS);
-            
-            return {
-                currentBPM: currentBPM1,
-                pxPerSubBeat: calculatedPxPerSubBeat,
-                jumpStrength: calculatedJumpStrength,
-                gravity: calculatedGravity
-            };
+        // Helper to check if Track 2 is playing
+        function isTrack2Playing() {
+            return !audio2.paused;
         }
 
-        // Function to update platform dynamics (pxPerSubBeat, jumpStrength, gravity)
-        // This will be called when BPMs change or play state changes for Track 1
-        function updatePlatformDynamics() {
-            const dynamics = calculatePlatformDynamics();
-            pxPerSubBeat = dynamics.pxPerSubBeat;
-            currentJumpStrength = dynamics.jumpStrength;
-            currentGravity = dynamics.gravity;
+        // Function to calculate and update the dynamics for a specific track
+        function calculateAndSetTrackDynamics(trackNum) {
+            const audio = trackNum === 1 ? audio1 : audio2;
+            const bpmValueElement = trackNum === 1 ? bpmValue1 : bpmValue2;
+            const targetDynamics = trackNum === 1 ? track1PlatformDynamics : track2PlatformDynamics;
 
-            // No longer uses setInterval, platforms are generated based on audio.currentTime in gameLoop
-            console.log(`Platform dynamics updated: BPM: ${dynamics.currentBPM.toFixed(1)}, Px/SubBeat: ${pxPerSubBeat.toFixed(2)}, Jump: ${currentJumpStrength.toFixed(2)}, Gravity: ${currentGravity.toFixed(2)}`);
+            const currentBPM = parseFloat(bpmValueElement.textContent);
+            const msPerBeat = (60 / currentBPM) * 1000;
+            targetDynamics.msPerSubBeat = msPerBeat / SUB_BEATS_PER_MAIN_BEAT;
+
+            // Scale pxPerSubBeat based on BPM relative to reference BPM
+            targetDynamics.pxPerSubBeat = (TARGET_PLATFORM_SPACING_PX_AT_REFERENCE_BPM / PLATFORM_SPAWN_BEAT_INTERVAL) * (currentBPM / REFERENCE_BPM_FOR_PLATFORMS);
+            
+            // Ball physics (jump strength and gravity) remains tied to Track 1 as the primary driver for ball behavior.
+            if (trackNum === 1) {
+                currentJumpStrength = baseJumpStrength * (currentBPM / REFERENCE_BPM_FOR_PLATFORMS);
+                currentGravity = baseGravity * (currentBPM / REFERENCE_BPM_FOR_PLATFORMS);
+            }
+        }
+
+        // Call this when BPMs change or game initializes
+        function updateAllPlatformDynamics() {
+            calculateAndSetTrackDynamics(1); // Update dynamics for Track 1 (also sets ball physics)
+            calculateAndSetTrackDynamics(2); // Update dynamics for Track 2
         }
 
         // Function to initialize the platform game
         function initializePlatformGame() {
             canvas.width = canvas.offsetWidth;
             canvas.height = canvas.offsetHeight;
-            const initialPlatformY = canvas.height * 0.75;
+            platformY = canvas.height * 0.75; // Set platformY based on current canvas height
 
             ballX = canvas.width / 4;
-            ballY = initialPlatformY - ballRadius;
-            ballDY = 0;
+            ballY = platformY - ballRadius; // Ball starts on the platform level
+            ballDY = 0; // Ball starts still, on the 'ground'
+
             platforms = []; // Clear existing visual platforms
-            upcomingPlatforms = []; // Clear planned platforms
+            upcomingPlatforms1 = []; // Clear planned platforms for Track 1
+            upcomingPlatforms2 = []; // Clear planned platforms for Track 2
+
             score = 0;
             gameScoreDisplay.textContent = `Score: ${score}`;
             platformGameRunning = false;
@@ -1251,43 +1601,40 @@
             minigameMessageBox.style.display = 'none';
             isJumping = false;
 
-            // Initialize upcomingPlatforms array
-            // Start planning from current audio time or 0 if not playing
-            const currentAudioTime = isTrack1Playing() ? audio1.currentTime : 0;
-            const msPerBeat = (60 / parseFloat(bpmValue1.textContent)) * 1000;
-            const msPerSubBeat = msPerBeat / SUB_BEATS_PER_MAIN_BEAT;
-            
-            let initialSubBeatTime = (currentAudioTime * 1000) / msPerSubBeat;
-            // Ensure first platform aligns with a main beat
-            let nextBeatIndex = Math.ceil(initialSubBeatTime / PLATFORM_SPAWN_BEAT_INTERVAL) * PLATFORM_SPAWN_BEAT_INTERVAL;
-            
-            // Add an initial platform right where the ball starts (or slightly before)
-            // This is a special platform to ensure the ball has something to land on at the start
-            platforms.push({
-                x: ballX - PLATFORM_WIDTH / 2, // Position it under the ball
-                y: initialPlatformY,
-                width: PLATFORM_WIDTH,
-                height: PLATFORM_HEIGHT,
-                spawnBeatTime: initialSubBeatTime // Mark its conceptual spawn beat as now
-            });
+            // Ensure platform dynamics are calculated for proper initial positioning
+            updateAllPlatformDynamics(); // This sets pxPerSubBeat for both tracks
 
-
-            // Pre-populate upcomingPlatforms for several screens ahead
+            // --- Populate upcomingPlatforms for Track 1 ---
+            const currentAudioTime1 = isTrack1Playing() ? audio1.currentTime : 0;
+            let currentSubBeatTime1 = (currentAudioTime1 * 1000) / track1PlatformDynamics.msPerSubBeat;
+            const subBeatsToReachBall1 = (canvas.width - ballX) / track1PlatformDynamics.pxPerSubBeat;
+            let firstSpawnBeatIndex1 = Math.round((currentSubBeatTime1 - subBeatsToReachBall1) / PLATFORM_SPAWN_BEAT_INTERVAL) * PLATFORM_SPAWN_BEAT_INTERVAL;
             for (let i = 0; i < 60; i++) { // Plan for 60 main beats ahead
-                upcomingPlatforms.push({
-                    beatIndex: nextBeatIndex + (i * PLATFORM_SPAWN_BEAT_INTERVAL),
-                    spawned: false
+                upcomingPlatforms1.push({
+                    beatIndex: firstSpawnBeatIndex1 + (i * PLATFORM_SPAWN_BEAT_INTERVAL),
+                    spawned: false,
+                    trackId: 'track1'
                 });
             }
 
-            // Ensure platform dynamics are calculated and set for initialization
-            updatePlatformDynamics();
+            // --- Populate upcomingPlatforms for Track 2 ---
+            const currentAudioTime2 = isTrack2Playing() ? audio2.currentTime : 0;
+            let currentSubBeatTime2 = (currentAudio2.currentTime * 1000) / track2PlatformDynamics.msPerSubBeat;
+            const subBeatsToReachBall2 = (canvas.width - ballX) / track2PlatformDynamics.pxPerSubBeat;
+            let firstSpawnBeatIndex2 = Math.round((currentSubBeatTime2 - subBeatsToReachBall2) / PLATFORM_SPAWN_BEAT_INTERVAL) * PLATFORM_SPAWN_BEAT_INTERVAL;
+            for (let i = 0; i < 60; i++) { // Plan for 60 main beats ahead
+                upcomingPlatforms2.push({
+                    beatIndex: firstSpawnBeatIndex2 + (i * PLATFORM_SPAWN_BEAT_INTERVAL),
+                    spawned: false,
+                    trackId: 'track2'
+                });
+            }
         }
 
         // Function to start the platform game loop
         function startPlatformGame() {
-            if (!isTrack1Playing()) {
-                minigameMessageBox.textContent = "Play Track 1 to start the game!";
+            if (!isTrack1Playing() && !isTrack2Playing()) {
+                minigameMessageBox.textContent = "Play Track 1 or Track 2 to start the game!";
                 minigameMessageBox.style.display = 'block';
                 return;
             }
@@ -1297,7 +1644,7 @@
             minigameMessageBox.style.display = 'none';
             
             // Ensure dynamics are up-to-date when starting/resuming
-            updatePlatformDynamics();
+            updateAllPlatformDynamics();
 
             // Start the game loop
             gameFrameId = requestAnimationFrame(gameLoop);
@@ -1328,53 +1675,113 @@
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Calculate current audio time in terms of sub-beats
-            const currentBPM1 = parseFloat(bpmValue1.textContent);
-            const msPerBeat = (60 / currentBPM1) * 1000;
-            const msPerSubBeat = msPerBeat / SUB_BEATS_PER_MAIN_BEAT;
-            const currentSubBeatTime = (audio1.currentTime * 1000) / msPerSubBeat;
-
             // --- Platform Spawning Logic ---
-            // The point on screen where a platform should be when its spawnBeatTime matches currentSubBeatTime
-            const SPAWN_POINT_X_ON_SCREEN = canvas.width * 0.75; // 3/4 across the screen
 
-            for (let i = 0; i < upcomingPlatforms.length; i++) {
-                const upcomingPlatform = upcomingPlatforms[i];
-                // Check if the platform's designated beat time is within an anticipation window
-                // and it hasn't been spawned yet
-                if (!upcomingPlatform.spawned && upcomingPlatform.beatIndex <= currentSubBeatTime + ANTICIPATION_BEATS) {
-                    platforms.push({
-                        x: 0, // Temp x, will be calculated later
-                        y: canvas.height * 0.75,
-                        width: PLATFORM_WIDTH,
-                        height: PLATFORM_HEIGHT,
-                        spawnBeatTime: upcomingPlatform.beatIndex // Store the beat index for movement calculation
-                    });
-                    upcomingPlatform.spawned = true; // Mark as spawned
+            // TRACK 1 PLATFORM SPAWNING
+            if (isTrack1Playing()) {
+                const currentSubBeatTime1 = (audio1.currentTime * 1000) / track1PlatformDynamics.msPerSubBeat;
+                upcomingPlatforms1.sort((a, b) => a.beatIndex - b.beatIndex); // Ensure sorted
+                for (let i = 0; i < upcomingPlatforms1.length; i++) {
+                    const upcomingPlatform = upcomingPlatforms1[i];
+                    if (!upcomingPlatform.spawned && upcomingPlatform.beatIndex <= currentSubBeatTime1 + ANTICIPATION_BEATS) {
+                        platforms.push({
+                            x: canvas.width,
+                            y: platformY,
+                            width: PLATFORM_WIDTH,
+                            height: PLATFORM_HEIGHT,
+                            spawnBeatTime: upcomingPlatform.beatIndex,
+                            trackId: 'track1',
+                            color: '#4682b4' // Steel Blue
+                        });
+                        upcomingPlatform.spawned = true;
+                    }
+                }
+                upcomingPlatforms1 = upcomingPlatforms1.filter(p => !p.spawned); // Remove spawned from upcoming
+
+                // Refill upcomingPlatforms1 if running low
+                if (upcomingPlatforms1.length < 30) {
+                    let lastBeatIndex1 = 0;
+                    // Find the last generated beat index for Track 1
+                    const lastTrack1Platform = platforms.findLast(p => p.trackId === 'track1');
+                    const lastUpcomingTrack1Platform = upcomingPlatforms1.findLast(p => p.trackId === 'track1');
+
+                    if (lastTrack1Platform) {
+                        lastBeatIndex1 = Math.max(lastBeatIndex1, lastTrack1Platform.spawnBeatTime);
+                    }
+                    if (lastUpcomingTrack1Platform) {
+                        lastBeatIndex1 = Math.max(lastBeatIndex1, lastUpcomingTrack1Platform.beatIndex);
+                    }
+                    if (lastBeatIndex1 === 0) { // If no platforms yet, start from current audio time
+                         const subBeatsToReachBall = (canvas.width - ballX) / track1PlatformDynamics.pxPerSubBeat;
+                         lastBeatIndex1 = Math.round((currentSubBeatTime1 - subBeatsToReachBall) / PLATFORM_SPAWN_BEAT_INTERVAL) * PLATFORM_SPAWN_BEAT_INTERVAL;
+                    }
+                    
+                    for (let i = 1; i <= 30; i++) {
+                        upcomingPlatforms1.push({
+                            beatIndex: lastBeatIndex1 + (i * PLATFORM_SPAWN_BEAT_INTERVAL),
+                            spawned: false,
+                            trackId: 'track1'
+                        });
+                    }
                 }
             }
 
-            // Refill upcomingPlatforms if running low
-            if (upcomingPlatforms.length < 30) { // Keep a buffer of 30 future platforms
-                let lastBeatIndex = 0;
-                if (upcomingPlatforms.length > 0) {
-                    lastBeatIndex = upcomingPlatforms[upcomingPlatforms.length - 1].beatIndex;
-                } else {
-                    // If upcomingPlatforms is empty, start from current audio position + an offset
-                    lastBeatIndex = Math.ceil(currentSubBeatTime / PLATFORM_SPAWN_BEAT_INTERVAL) * PLATFORM_SPAWN_BEAT_INTERVAL;
-                }
 
-                for (let i = 0; i < 30; i++) { // Add 30 more anticipated main beats
-                    upcomingPlatforms.push({
-                        beatIndex: lastBeatIndex + (i * PLATFORM_SPAWN_BEAT_INTERVAL),
-                        spawned: false
-                    });
+            // TRACK 2 PLATFORM SPAWNING
+            if (isTrack2Playing()) { // Only spawn if Track 2 is playing
+                const currentSubBeatTime2 = (audio2.currentTime * 1000) / track2PlatformDynamics.msPerSubBeat;
+                upcomingPlatforms2.sort((a, b) => a.beatIndex - b.beatIndex); // Ensure sorted
+                for (let i = 0; i < upcomingPlatforms2.length; i++) {
+                    const upcomingPlatform = upcomingPlatforms2[i];
+                    if (!upcomingPlatform.spawned && upcomingPlatform.beatIndex <= currentSubBeatTime2 + ANTICIPATION_BEATS) {
+                        platforms.push({
+                            x: canvas.width,
+                            y: platformY,
+                            width: PLATFORM_WIDTH,
+                            height: PLATFORM_HEIGHT,
+                            spawnBeatTime: upcomingPlatform.beatIndex,
+                            trackId: 'track2',
+                            color: '#FFA500' // Orange
+                        });
+                        upcomingPlatform.spawned = true;
+                    }
+                }
+                upcomingPlatforms2 = upcomingPlatforms2.filter(p => !p.spawned); // Remove spawned from upcoming
+
+                // Refill upcomingPlatforms2 if running low
+                if (upcomingPlatforms2.length < 30) {
+                    let lastBeatIndex2 = 0;
+                    // Find the last generated beat index for Track 2
+                    const lastTrack2Platform = platforms.findLast(p => p.trackId === 'track2');
+                    const lastUpcomingTrack2Platform = upcomingPlatforms2.findLast(p => p.trackId === 'track2');
+
+                    if (lastTrack2Platform) {
+                        lastBeatIndex2 = Math.max(lastBeatIndex2, lastTrack2Platform.spawnBeatTime);
+                    }
+                    if (lastUpcomingTrack2Platform) {
+                        lastBeatIndex2 = Math.max(lastBeatIndex2, lastUpcomingTrack2Platform.beatIndex);
+                    }
+                    if (lastBeatIndex2 === 0) { // If no platforms yet, start from current audio time
+                         const subBeatsToReachBall = (canvas.width - ballX) / track2PlatformDynamics.pxPerSubBeat;
+                         lastBeatIndex2 = Math.round((currentSubBeatTime2 - subBeatsToReachBall) / PLATFORM_SPAWN_BEAT_INTERVAL) * PLATFORM_SPAWN_BEAT_INTERVAL;
+                    }
+
+                    for (let i = 1; i <= 30; i++) {
+                        upcomingPlatforms2.push({
+                            beatIndex: lastBeatIndex2 + (i * PLATFORM_SPAWN_BEAT_INTERVAL),
+                            spawned: false,
+                            trackId: 'track2'
+                        });
+                    }
                 }
             }
+            
+            // Store ball's previous Y position for collision prediction
+            const prevBallY = ballY;
 
             // --- Update ball position ---
             ballY += ballDY;
-            ballDY += currentGravity; // Use dynamic gravity
+            ballDY += currentGravity; // Use dynamic gravity (controlled by Track 1's BPM)
 
             // Draw ball
             ctx.beginPath();
@@ -1387,29 +1794,53 @@
             ctx.shadowBlur = 0;
             ctx.closePath();
 
-            // --- Update and draw platforms based on beat progression ---
+            // --- Update and draw platforms, and perform collision detection ---
             for (let i = platforms.length - 1; i >= 0; i--) {
                 let platform = platforms[i];
 
-                // Calculate platform's X position based on current beat and its designated spawn beat
-                // A platform is at SPAWN_POINT_X_ON_SCREEN when currentSubBeatTime == platform.spawnBeatTime
-                platform.x = SPAWN_POINT_X_ON_SCREEN - ((platform.spawnBeatTime - currentSubBeatTime) * pxPerSubBeat);
+                let relevantAudio, relevantDynamics;
+                if (platform.trackId === 'track1') {
+                    relevantAudio = audio1;
+                    relevantDynamics = track1PlatformDynamics;
+                } else if (platform.trackId === 'track2') {
+                    relevantAudio = audio2;
+                    relevantDynamics = track2PlatformDynamics;
+                }
 
-                ctx.fillStyle = '#4682b4'; // Steel Blue
+                // Only move platforms if their associated track is playing
+                if (relevantAudio && !relevantAudio.paused) {
+                    const currentSubBeatTimeForPlatform = (relevantAudio.currentTime * 1000) / relevantDynamics.msPerSubBeat;
+                    platform.x = canvas.width - (currentSubBeatTimeForPlatform - platform.spawnBeatTime) * relevantDynamics.pxPerSubBeat;
+                }
+                // If the track is paused, the platform stops moving (its x remains fixed relative to the screen)
+
+                ctx.fillStyle = platform.color; // Use the platform's stored color
                 ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
 
-                // Collision detection (ball with platform)
-                if (ballDY > 0 && // Ball is falling
-                    ballY + ballRadius >= platform.y && // Ball's bottom touches or is below platform top
-                    ballY + ballRadius <= platform.y + platform.height && // Ball's bottom is not past platform bottom
-                    ballX + ballRadius > platform.x && // Ball's right edge passed platform's left edge
-                    ballX - ballRadius < platform.x + platform.width // Ball's left edge hasn't passed platform's right edge
-                ) {
-                    ballY = platform.y - ballRadius; // Snap ball to top of platform
-                    ballDY = currentJumpStrength; // Initiate automatic jump with current dynamic jumpStrength
-                    isJumping = true; 
-                    score += 10; 
-                    gameScoreDisplay.textContent = `Score: ${score}`;
+                // **Improved Collision Detection (Swept AABB for vertical)**
+                // Only if ball is falling
+                if (ballDY > 0) {
+                    const ballBottom = ballY + ballRadius;
+                    const prevBallBottom = prevBallY + ballRadius;
+
+                    // Horizontal check
+                    const ballLeft = ballX - ballRadius;
+                    const ballRight = ballX + ballRadius;
+                    const platformLeft = platform.x;
+                    const platformRight = platform.x + platform.width;
+
+                    const horizontalOverlap = (ballRight > platformLeft && ballLeft < platformRight);
+
+                    // Vertical swept AABB check for landing on top of platform
+                    // Check if the ball's previous bottom was above or at the platform's top
+                    // AND its current bottom is at or below the platform's top. Add a small tolerance.
+                    if (horizontalOverlap && prevBallBottom <= platform.y + 1 && ballBottom >= platform.y) {
+                        ballY = platform.y - ballRadius; // Snap to top of platform
+                        ballDY = currentJumpStrength;    // Initiate jump (using Track 1's derived jump strength)
+                        isJumping = true;                // Set jumping state
+                        score += 10;
+                        gameScoreDisplay.textContent = `Score: ${score}`;
+                    }
                 }
 
                 // Remove platforms that are off-screen (moved past the left edge)
@@ -1452,11 +1883,66 @@
             }
         });
 
+        // Message listener to receive song data from parent
+        window.addEventListener('message', (event) => {
+            // Check the origin if you want more security: if (event.origin !== 'http://your-mainscreen-domain.com') return;
+            if (event.data.type === 'musicData' && event.data.payload) {
+                const songs = event.data.payload;
+                if (songs.length >= 2) {
+                    const song1 = songs[0];
+                    const song2 = songs[1];
+
+                    // Update audio sources and initial BPMs
+                    audio1.src = song1.url || audio1.src;
+                    audio1.load(); // Load the new audio
+                    initialBaseBPM1 = song1.bpm || initialBaseBPM1;
+                    bpmValue1.textContent = initialBaseBPM1.toFixed(1);
+                    setupBPMSlider(bpmSlider1, initialBaseBPM1);
+
+                    audio2.src = song2.url || audio2.src;
+                    audio2.load(); // Load the new audio
+                    initialBaseBPM2 = song2.bpm || initialBaseBPM2;
+                    bpmValue2.textContent = initialBaseBPM2.toFixed(1);
+                    setupBPMSlider(bpmSlider2, initialBaseBPM2);
+
+                    console.log('Received and updated songs for Sapito Game:', song1.title, song2.title);
+
+                    // Re-initialize beat visualizers with potentially new BPMs
+                    generateBeatBars(beatBarsWrapper1, currentNumMainBeatsDisplayed1, SUB_BEATS_PER_MAIN_BEAT, beatVisualizer1.offsetWidth);
+                    generateBeatBars(beatBarsWrapper2, currentNumMainMainBeatsDisplayed2, SUB_BEATS_PER_MAIN_BEAT, beatVisualizer2.offsetWidth);
+
+                    // Ensure playback rate is set according to new BPM on load if audio is already playing
+                    if (!audio1.paused) {
+                        audio1.playbackRate = parseFloat(bpmValue1.textContent) / initialBaseBPM1;
+                        startBeatVisualizationLoop(audio1, beatBarsWrapper1, beatHighlightTimeouts1, 'animationFrameId1', currentNumMainBeatsDisplayed1);
+                        startKickAnimationInterval(audio1, kickPulse1, 'kickInterval1', parseFloat(bpmValue1.textContent));
+                        jogWheelState1.lastRotationTime = performance.now();
+                        jogWheelState1.animationFrameRotationId = requestAnimationFrame((ts) => updateJogWheelRotation(jogWheel1, jogWheelState1, ts));
+                    }
+                     if (!audio2.paused) {
+                        audio2.playbackRate = parseFloat(bpmValue2.textContent) / initialBaseBPM2;
+                        startBeatVisualizationLoop(audio2, beatBarsWrapper2, beatHighlightTimeouts2, 'animationFrameId2', currentNumMainMainBeatsDisplayed2);
+                        startKickAnimationInterval(audio2, kickPulse2, 'kickInterval2', parseFloat(bpmValue2.textContent));
+                        jogWheelState2.lastRotationTime = performance.now();
+                        jogWheelState2.animationFrameRotationId = requestAnimationFrame((ts) => updateJogWheelRotation(jogWheel2, jogWheelState2, ts));
+                    }
+                    updateAllPlatformDynamics(); // Update game dynamics after new songs are loaded
+                } else {
+                    console.warn('Received music data for Sapito Game, but not enough songs for both tracks. Using defaults.');
+                }
+            }
+        });
+
+        // Initial call to checkSyncedKicks to start the continuous check
+        // Moved to window.onload for full page readiness
+        // Initial crossfader dispatch to set initial volumes and glows
+        // Moved to window.onload for full page readiness
 
         // Initial setup on window load
         window.onload = () => {
             // Initial setup for DJ app elements
             checkSyncedKicks(); // Start the continuous sync check loop
+            crossfader.dispatchEvent(new Event('input'));
             // No need to call initializePlatformGame here, it's called when visualization frame is toggled or minigame start button is clicked
         };
     </script>
