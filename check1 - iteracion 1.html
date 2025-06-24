@@ -561,6 +561,7 @@
         // Get reference to the synced kicks indicator
         const syncedKicksIndicator = document.getElementById('synced-kicks-indicator');
 
+
         // Get reference to the crossfader
         const crossfader = document.getElementById('crossfader');
 
@@ -615,8 +616,8 @@
         const VISUALIZATION_DURATION_MS = 200; // Duration in milliseconds that the visual kick pulse is active
 
         // Initial base BPMs for each track
-        const initialBaseBPM1 = 145;
-        const initialBaseBPM2 = 130;
+        let initialBaseBPM1 = 145; // These will be updated by loadSong
+        let initialBaseBPM2 = 130; // These will be updated by loadSong
 
         // Define the BPM range for sliders (+- 16 BPM)
         const BPM_RANGE = 16;
@@ -975,6 +976,9 @@
             // Audio manipulation (Nudging/Scratching)
             if (!jogState.audioElement.paused) {
                 const bpm = parseFloat(jogState.bpmValueElement.textContent);
+                // Dynamically get the base BPM for the current track
+                const baseBPMForTrack = (jogState.audioElement === audio1) ? initialBaseBPM1 : initialBaseBPM2;
+
                 const nudgeSensitivity = 0.0005; // How much a small rotation affects playback rate
                 const scratchThreshold = 5; // Degrees per frame to trigger scratch
 
@@ -986,7 +990,7 @@
                     // Nudging effect: temporary pitch bend
                     if (jogState.nudgeTimeout) clearTimeout(jogState.nudgeTimeout);
 
-                    const originalPlaybackRate = bpm / (jogState.audioElement === audio1 ? initialBaseBPM1 : initialBaseBPM2);
+                    const originalPlaybackRate = bpm / baseBPMForTrack;
                     const newPlaybackRate = originalPlaybackRate + (deltaAngle * nudgeSensitivity);
 
                     // Clamp playback rate to prevent extreme values
@@ -1012,7 +1016,9 @@
                 clearTimeout(jogState.nudgeTimeout);
                 // Ensure playback rate returns to normal after drag ends
                 const bpm = parseFloat(jogState.bpmValueElement.textContent);
-                jogState.audioElement.playbackRate = bpm / (jogState.audioElement === audio1 ? initialBaseBPM1 : initialBaseBPM2);
+                // Dynamically get the base BPM for the current track
+                const baseBPMForTrack = (jogState.audioElement === audio1) ? initialBaseBPM1 : initialBaseBPM2;
+                jogState.audioElement.playbackRate = bpm / baseBPMForTrack;
             }
             // NEW: Resume automatic rotation after drag ends, if audio is playing
             if (!jogState.audioElement.paused && !jogState.animationFrameRotationId) {
@@ -1340,6 +1346,134 @@
         // Call setup for both jog traces when the script loads
         setupJogTrace(jogTraceCircle1);
         setupJogTrace(jogTraceCircle2);
+
+
+        // ---------- NEW: loadSong function definition ----------
+        /**
+         * Loads a song into a deck, updating audio source, BPM, and beat visualization.
+         * @param {HTMLAudioElement} audioElement - The audio element for the deck.
+         * @param {HTMLElement} songNameElement - The element to display the song name (not present in HTML, so ignored for now).
+         * @param {HTMLElement} bpmValueElement - The element to display the BPM value.
+         * @param {string} newSongName - The name of the new song.
+         * @param {number} newBPM - The BPM of the new song.
+         * @param {string} newFileUrl - The URL of the new audio file.
+         * @param {HTMLElement} beatBarsWrapper - The wrapper for beat visualization bars.
+         * @param {Array<number>} beatHighlightTimeouts - Array to store beat highlight timeouts.
+         * @param {string} animationFrameIdVarName - The name of the variable storing the beat visualization animation frame ID.
+         * @param {number} currentNumMainBeatsDisplayed - The current zoom level for beat visualization.
+         */
+        function loadSong(audioElement, songNameElement, bpmValueElement, newSongName, newBPM, newFileUrl, beatBarsWrapper, beatHighlightTimeouts, animationFrameIdVarName, currentNumMainBeatsDisplayed) {
+            // Update audio source
+            audioElement.src = newFileUrl;
+            audioElement.load(); // Load the new audio
+
+            // Update BPM display and slider
+            bpmValueElement.textContent = newBPM.toFixed(1);
+
+            // Dynamically update the initialBaseBPM for the specific track
+            if (audioElement === audio1) {
+                initialBaseBPM1 = newBPM;
+                setupBPMSlider(bpmSlider1, newBPM);
+            } else if (audioElement === audio2) {
+                initialBaseBPM2 = newBPM;
+                setupBPMSlider(bpmSlider2, newBPM);
+            }
+
+            // (Optional) Update song name display if you add elements for it in your HTML
+            // if (songNameElement) {
+            //     songNameElement.textContent = newSongName;
+            // }
+
+            // Reset cue point to 0 when loading a new song
+            if (audioElement === audio1) {
+                cuePoint1 = 0;
+            } else if (audioElement === audio2) {
+                cuePoint2 = 0;
+            }
+
+            // Stop any existing animation/intervals for the old song
+            audioElement.pause();
+            if (audioElement === audio1) {
+                playPause1.innerHTML = '▶️ PLAY A';
+                clearInterval(kickInterval1);
+                cancelAnimationFrame(jogWheelState1.animationFrameId);
+                if (jogWheelState1.animationFrameRotationId) {
+                    cancelAnimationFrame(jogWheelState1.animationFrameRotationId);
+                    jogWheelState1.animationFrameRotationId = null;
+                }
+                clearBeatHighlightTimeouts(beatHighlightTimeouts1);
+            } else if (audioElement === audio2) {
+                playPause2.innerHTML = '▶️ PLAY B';
+                clearInterval(kickInterval2);
+                cancelAnimationFrame(jogWheelState2.animationFrameId);
+                if (jogWheelState2.animationFrameRotationId) {
+                    cancelAnimationFrame(jogWheelState2.animationFrameRotationId);
+                    jogWheelState2.animationFrameRotationId = null;
+                }
+                clearBeatHighlightTimeouts(beatHighlightTimeouts2);
+            }
+
+            // Regenerate beat bars for the new track (important if BPM changes significantly affects visualization)
+            // You might want to delay this slightly or ensure audio is loaded.
+            generateBeatBars(beatBarsWrapper, TOTAL_GENERATED_SUB_BEATS / SUB_BEATS_PER_MAIN_BEAT, SUB_BEATS_PER_MAIN_BEAT, beatBarsWrapper.parentElement.offsetWidth);
+            // Don't start updateBeatVisualization until the user plays the track
+            console.log(`Song loaded: ${newSongName} (BPM: ${newBPM}, File: ${newFileUrl})`);
+        }
+        // ---------- END NEW: loadSong function definition ----------
+
+
+// ---------- FUNCIÓN PARA ESCUCHAR EL MENSAJE DE MÚSICA ----------
+        window.addEventListener('message', (event) => {
+            // *** IMPORTANTE: Verifica el origen del mensaje en un entorno de producción para evitar ataques XSS ***
+            // Por ejemplo, si tu página principal (el emisor) está en 'http://localhost:8000', usa:
+            // if (event.origin !== "http://localhost:8000") {
+            //     console.warn('Mensaje recibido de un origen no autorizado:', event.origin);
+            //     return;
+            // }
+
+            if (event.data && event.data.type === 'sapitoGameMusicData') {
+                const musicData = event.data.musicTracks;
+                if (musicData && musicData.length >= 2) {
+                    console.log('DJ App (new jog): Recibida información de música:', musicData);
+
+                    // Here's where you use the song data to load it into your players
+                    // You will need references to your audio elements and visualization elements
+
+                    // Load the first song (Deck 1)
+                    // Note: songName1 is not an existing element in your HTML, consider adding it if you want to display the song name.
+                    loadSong(audio1, null, bpmValue1, musicData[0].name, musicData[0].bpm, musicData[0].file, beatBarsWrapper1, beatHighlightTimeouts1, 'animationFrameId1', currentNumMainBeatsDisplayed1);
+                    
+                    // Load the second song (Deck 2)
+                    loadSong(audio2, null, bpmValue2, musicData[1].name, musicData[1].bpm, musicData[1].file, beatBarsWrapper2, beatHighlightTimeouts2, 'animationFrameId2', currentNumMainMainBeatsDisplayed2);
+
+                    // Adicionalmente, si tienes lógicas de animación o juego que dependen de la carga,
+                    // como las que estaban en 2jog - Sapito v3 - Music-fron-main.html:
+                    // These should generally only start when the user presses play, but kept them for now if they are intended to run on load.
+                    // If these are meant to only run when the user explicitly plays the song, remove them from here.
+                    startKickAnimationInterval(audio1, kickPulse1, 'kickInterval1', parseFloat(bpmValue1.textContent));
+                    jogWheelState1.lastRotationTime = performance.now();
+                    jogWheelState1.animationFrameRotationId = requestAnimationFrame((ts) => updateJogWheelRotation(jogWheel1, jogWheelState1, ts));
+
+                    startKickAnimationInterval(audio2, kickPulse2, 'kickInterval2', parseFloat(bpmValue2.textContent));
+                    jogWheelState2.lastRotationTime = performance.now();
+                    jogWheelState2.animationFrameRotationId = requestAnimationFrame((ts) => updateJogWheelRotation(jogWheel2, jogWheelState2, ts));
+
+                    // If there is any global game dynamics update
+                    // Make sure updateAllPlatformDynamics is defined in this file
+                    if (typeof updateAllPlatformDynamics === 'function') {
+                        updateAllPlatformDynamics();
+                    } else {
+                        console.warn('Función updateAllPlatformDynamics no encontrada en check 6 - all working - new jog.html');
+                    }
+
+                } else {
+                    console.warn('DJ App (new jog): Recibida información de música, pero no hay suficientes canciones para ambas pistas. Usando valores predeterminados si los hay.');
+                }
+            } else {
+                // console.log('DJ App (new jog): Mensaje recibido pero no es del tipo esperado:', event.data);
+            }
+        });
+        // ---------- FIN DE LA FUNCIÓN PARA ESCUCHAR EL MENSAJE ----------
 
 
         // Initial call to checkSyncedKicks to start the continuous check
