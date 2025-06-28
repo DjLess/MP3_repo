@@ -1625,6 +1625,36 @@ window.addEventListener("message", function(event) {
 }, false);
 
 
+// ✅ Receive music data from main screen
+window.addEventListener("message", function(event) {
+    if (
+        event.data &&
+        event.data.type === "musicData" &&
+        Array.isArray(event.data.payload) &&
+        event.data.payload.length > 0
+    ) {
+        const pair = event.data.payload[0]; // First pair of songs
+        const song1 = pair.audio1;
+        const song2 = pair.audio2;
+
+        console.log("✅ Received music data for Sapito Game:", song1.title, song2.title);
+
+        // Set audio sources
+        audio1.src = song1.url;
+        audio2.src = song2.url;
+
+        // Update BPM values and sliders
+        bpmValue1.textContent = song1.bpm.toFixed(1);
+        bpmSlider1.value = song1.bpm;
+        bpmValue2.textContent = song2.bpm.toFixed(1);
+        bpmSlider2.value = song2.bpm;
+    } else {
+        console.warn("⚠️ Invalid or missing music data payload:", event.data);
+    }
+}, false);
+
+
+        
     </script>
 </body>
 </html>
