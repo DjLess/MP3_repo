@@ -392,6 +392,8 @@
             artist: 'Default Artist',
             bpm: 128,
             genre: 'Electronic',
+            // !!! IMPORTANT: The following URL returned 404 (Not Found).
+            // Please ensure this file exists at this URL or provide a new, valid URL.
             url: 'https://raw.githubusercontent.com/DjLess/MP3_repo/main/default_beat_128bpm.mp3',
             songStructure: ["16k", "16b", "8k", "8b"] // Example structure
         };
@@ -401,6 +403,8 @@
             artist: 'Default Artist',
             bpm: 135,
             genre: 'Techno',
+            // !!! IMPORTANT: The following URL returned 404 (Not Found).
+            // Please ensure this file exists at this URL or provide a new, valid URL.
             url: 'https://raw.githubusercontent.com/DjLess/MP3_repo/main/default_beat_135bpm.mp3',
             songStructure: ["8k", "8b", "16k", "16b"] // Example structure
         };
@@ -529,9 +533,10 @@
 
             // Update UI
             document.getElementById(`song-title-${deckNumber}`).textContent = songData.title;
-            bpmValueElement.textContent = songData.bpm.toFixed(1);
+            // The bpmValueElement is updated via setupBPMSlider now.
             
-            setupBPMSlider(bpmSliderElement, songData.bpm);
+            // Pass the bpmValueElement to setupBPMSlider
+            setupBPMSlider(bpmSliderElement, bpmValueElement, songData.bpm);
             generateBeatBars(beatBarsWrapper, currentNumMainBeatsDisplayed1, SUB_BEATS_PER_MAIN_BEAT, beatVisualizer1.clientWidth); // Use fixed values for now, can adjust
             
             // Clear any old beat highlight timeouts
@@ -548,13 +553,15 @@
             }
         }
 
-        function setupBPMSlider(slider, initialBPM) {
+        // Modified: Added bpmValueElement parameter
+        function setupBPMSlider(slider, bpmValueElement, initialBPM) {
             // Set slider to represent current BPM correctly relative to playback rate
             slider.value = 1.0; // Reset to 1.0 (original speed)
             const updateBPM = () => {
                 const newRate = parseFloat(slider.value);
                 const actualBPM = initialBPM * newRate;
-                slider.previousElementSibling.textContent = actualBPM.toFixed(1); // Update BPM display
+                // Fix: Access the correct BPM value display element directly using the passed parameter
+                bpmValueElement.textContent = actualBPM.toFixed(1); // CORRECTED LINE
                 if (slider === bpmSlider1) {
                     audio1.playbackRate = newRate;
                 } else {
@@ -775,6 +782,7 @@
             audio.playbackRate = newPlaybackRate;
 
             // Update BPM display
+            // This now relies on bpmValueElement being updated via setupBPMSlider's updateBPM or direct loadSong calls
             const actualBPM = originalBPM * newPlaybackRate;
             if (audio === audio1) {
                 bpmValue1.textContent = actualBPM.toFixed(1);
@@ -1154,7 +1162,7 @@
             // For example, if your main screen is served from http://localhost:8000, use "http://localhost:8000".
             // If it's a file on your local system, you might need to test with "null" during development,
             // but it's crucial to set a specific origin in deployment for security.
-            const trustedOrigin = "null"; // E.g., "http://localhost:8000" or "https://your-main-app-domain.com"
+            const trustedOrigin = "YOUR_MAIN_APP_ORIGIN"; // E.g., "http://localhost:8000" or "https://your-main-app-domain.com"
 
             // For local file testing, event.origin might be "null" or "file://".
             // Be cautious with "null" in production as it can be spoofed.
@@ -1196,8 +1204,8 @@
                         audio2.load();
 
                         // Update BPM sliders based on new song BPMs
-                        setupBPMSlider(bpmSlider1, song1.bpm);
-                        setupBPMSlider(bpmSlider2, song2.bpm);
+                        setupBPMSlider(bpmSlider1, bpmValue1, song1.bpm); // Corrected call: Pass bpmValue1
+                        setupBPMSlider(bpmSlider2, bpmValue2, song2.bpm); // Corrected call: Pass bpmValue2
 
                         // Re-generate beat bars for new songs
                         generateBeatBars(beatBarsWrapper1, currentNumMainBeatsDisplayed1, SUB_BEATS_PER_MAIN_BEAT, beatVisualizer1.clientWidth);
