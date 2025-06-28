@@ -1600,59 +1600,42 @@
             crossfader.dispatchEvent(new Event('input'));
             // No need to call initializePlatformGame here, it's called when visualization frame is toggled or minigame start button is clicked
         };
-
-// Escuchar mensajes de canciones desde el postMessage
 window.addEventListener("message", function(event) {
-    if (event.data && Array.isArray(event.data) && event.data.length > 0) {
-        const pair = event.data[0]; // Primer par de canciones
-        const song1 = pair.audio1;
-        const song2 = pair.audio2;
+    const data = event.data;
 
-        console.log("Received and updated songs for Sapito Game:", song1.title, song2.title);
-
-        // Actualiza las fuentes de audio
-        audio1.src = song1.url;
-        audio2.src = song2.url;
-
-        // Actualiza BPM visual y sliders
-        bpmValue1.textContent = song1.bpm.toFixed(1);
-        bpmSlider1.value = song1.bpm;
-        bpmValue2.textContent = song2.bpm.toFixed(1);
-        bpmSlider2.value = song2.bpm;
-    } else {
-        console.warn("Received invalid or empty song data via postMessage:", event.data);
-    }
-}, false);
-
-
-// ✅ Receive music data from main screen
-window.addEventListener("message", function(event) {
     if (
-        event.data &&
-        event.data.type === "musicData" &&
-        Array.isArray(event.data.payload) &&
-        event.data.payload.length > 0
+        data &&
+        data.type === "musicData" &&
+        Array.isArray(data.payload) &&
+        data.payload.length > 0 &&
+        data.payload[0].audio1 &&
+        data.payload[0].audio2
     ) {
-        const pair = event.data.payload[0]; // First pair of songs
+        const pair = data.payload[0];
         const song1 = pair.audio1;
         const song2 = pair.audio2;
 
         console.log("✅ Received music data for Sapito Game:", song1.title, song2.title);
 
-        // Set audio sources
+        // Cargar canciones en los elementos de audio
         audio1.src = song1.url;
         audio2.src = song2.url;
 
-        // Update BPM values and sliders
-        bpmValue1.textContent = song1.bpm.toFixed(1);
+        // Mostrar BPM
+        bpmValue1.textContent = song1.bpm?.toFixed?.(1) || song1.bpm;
         bpmSlider1.value = song1.bpm;
-        bpmValue2.textContent = song2.bpm.toFixed(1);
+        bpmValue2.textContent = song2.bpm?.toFixed?.(1) || song2.bpm;
         bpmSlider2.value = song2.bpm;
     } else {
-        console.warn("⚠️ Invalid or missing music data payload:", event.data);
+        console.warn("⚠️ Error en datos recibidos por postMessage:", data);
+        console.warn("🔍 Estado interno - Validaciones:");
+        console.warn("-> data.type:", data?.type);
+        console.warn("-> payload:", data?.payload);
+        console.warn("-> payload[0]:", data?.payload?.[0]);
+        console.warn("-> payload[0].audio1:", data?.payload?.[0]?.audio1);
+        console.warn("-> payload[0].audio2:", data?.payload?.[0]?.audio2);
     }
 }, false);
-
 
         
     </script>
