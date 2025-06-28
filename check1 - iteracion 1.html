@@ -1431,7 +1431,7 @@
             //     return;
             // }
 
-            if (event.data && event.data.type === 'musicData') {
+            if (event.data && event.data.type === 'sapitoGameMusicData') {
                 const musicData = event.data.musicTracks;
                 if (musicData && musicData.length >= 2) {
                     console.log('DJ App (new jog): Recibida información de música:', musicData);
@@ -1481,6 +1481,46 @@
 
         // Initial crossfader dispatch to set initial volumes and glows
 	    crossfader.dispatchEvent(new Event('input'));
+
+
+window.addEventListener("message", function(event) {
+    const data = event.data;
+
+    if (
+        data &&
+        data.type === "musicData" &&
+        Array.isArray(data.payload) &&
+        data.payload.length > 0 &&
+        data.payload[0].audio1 &&
+        data.payload[0].audio2
+    ) {
+        const pair = data.payload[0];
+        const song1 = pair.audio1;
+        const song2 = pair.audio2;
+
+        console.log("✅ Received music data for Sapito Game:", song1.title, song2.title);
+
+        // Cargar canciones en los elementos de audio
+        audio1.src = song1.url;
+        audio2.src = song2.url;
+
+        // Mostrar BPM
+        bpmValue1.textContent = song1.bpm?.toFixed?.(1) || song1.bpm;
+        bpmSlider1.value = song1.bpm;
+        bpmValue2.textContent = song2.bpm?.toFixed?.(1) || song2.bpm;
+        bpmSlider2.value = song2.bpm;
+    } else {
+        console.warn("⚠️ Error en datos recibidos por postMessage:", data);
+        console.warn("🔍 Estado interno - Validaciones:");
+        console.warn("-> data.type:", data?.type);
+        console.warn("-> payload:", data?.payload);
+        console.warn("-> payload[0]:", data?.payload?.[0]);
+        console.warn("-> payload[0].audio1:", data?.payload?.[0]?.audio1);
+        console.warn("-> payload[0].audio2:", data?.payload?.[0]?.audio2);
+    }
+}, false);
+
+
 
     </script>
 </body>
